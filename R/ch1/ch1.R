@@ -1,8 +1,8 @@
-#'''
-#NYU-CUSP UCSL
-#R Challenge no. 1
-#Christopher Prince
-#'''
+#
+# NYU-CUSP UCSL
+# R Challenge no. 1
+# Christopher Prince
+#
 
 #import Jan 2015 CitiBike data from csv file, include a header line
 fname <- '~/UCSL/R/ch1/201501-citibike-tripdata.csv'
@@ -24,7 +24,7 @@ tdur.qtile <- quantile(cbdata$tripduration)
 #COMPUTING Z-SCORE [from JCB code]
 z_sc <- (cbdata$tripduration-tdur.mean)/tdur.sd
 
-#creating subsets of data by z_sc
+#creating subset of data for z_sc<3
 bikedata.z3 <- subset(cbdata, z_sc<3)
 
 # Computing same calculation for data without outliers
@@ -57,9 +57,9 @@ bikedata.z3.subs.count <- dim(bikedata.z3.subs)[1]
 
 
 #verify that the subsets capture all data (i.e., check for blank or mislabeled usertype)
-test_msg <- 'Counts match!'    #assume success
-if (bikedata.cust.count + bikedata.subs.count !=cbdata.count) {test_msg <- 'Counts do not match!'} #change msg if !=
-test_msg
+test_msg <- 'Counts match!'    #assume equal
+if (bikedata.cust.count + bikedata.subs.count !=cbdata.count) {test_msg <- 'Counts do not match!'} #change msg if not eq.
+test_msg   #print message
 
 #histograms of tdur by usertype for z_sc<3 subsets
 par(mfrow=c(2,2))
@@ -73,3 +73,9 @@ boxplot(bikedata.z3.subs$tripduration, main='Boxplot of subscriber Trip Duration
 boxplot(log(bikedata.z3.subs$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
 boxplot(bikedata.z3.cust$tripduration, main='Boxplot of subscriber Trip Duration', xlab='time(sec)')
 boxplot(log(bikedata.z3.cust$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
+
+#alternate presentation
+par(mfrow=c(1,2))
+boxplot(tripduration ~ usertype, data=bikedata.z3)
+boxplot(log(tripduration) ~ usertype, data=bikedata.z3)
+
