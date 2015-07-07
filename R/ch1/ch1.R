@@ -60,7 +60,7 @@ bikedata.z3.subs.count <- dim(bikedata.z3.subs)[1]
 test_msg <- 'Counts match!'    #assume success
 if (bikedata.cust.count + bikedata.subs.count !=cbdata.count) {test_msg <- 'Counts do not match!'} #change msg if !=
 test_msg
-
+#test comment for git
 #histograms of tdur by usertype for z_sc<3 subsets
 par(mfrow=c(2,2))
 hist(bikedata.z3.subs$tripduration, main = "Subscriber Trip Duration", xlab = "time (sec)", col='red')
