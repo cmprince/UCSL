@@ -32,43 +32,80 @@ tdur.qtile <- quantile(cbdata$tripduration)
 options('scipen'=2, 'digits' = 2)
 ```
 
-|symbol       |description                     |value           |
-|:------------|:------------------------------:|---------------:|
-|`cbdata.count` |number of observations in `cbdata`|`r cbdata.count`|
-|`tdur.mean`    |mean trip duration              |`r tdur.mean`   |  
-|`tdur.var`     |variance of trip duration       |`r round(tdur.var, 0)`    |
-|`tdur.sd`     |standard deviation of trip duration|`r tdur.sd`             |
-|`tdur.min`     |minimum trip duration           |`r tdur.min`                |
-|`tdur.max`     |maximum trip duration           |`r tdur.max`                |
-|`tdur.median`  |median trip duration            |`r tdur.median`|
+|symbol         |description                        |value           |
+|:--------------|:---------------------------------:|---------------:|
+|`cbdata.count` |number of observations in `cbdata` |`r cbdata.count`|
+|`tdur.mean`    |mean trip duration                 |`r tdur.mean`   |  
+|`tdur.var`     |variance of trip duration          |`r round(tdur.var, 0)`|
+|`tdur.sd`      |standard deviation of trip duration|`r tdur.sd`     |
+|`tdur.min`     |minimum trip duration              |`r tdur.min`    |
+|`tdur.max`     |maximum trip duration              |`r tdur.max`    |
+|`tdur.median`  |median trip duration               |`r tdur.median` |
 
-Outliers are then removed by *z*-score. Observations with a *z*-score greater than 3 (more than three standard deviations from the mean) are removed from the set using the subset function:
+
+The quartile values are calculated in the vector `tdur.qtile`, which we use to calculate the *inner quartile range*:
+```{r}
+tdur.qtile
+iqr = tdur.qtile[4]-tdur.qtile[2]
+```
+
+Outliers are then removed by *z*-score. Observations with a *z*-score greater than 3 (more than three standard deviations from the mean) are removed from the set using the `subset` function:
 
 ```{r}
 
 #COMPUTING Z-SCORE [from JCB code]
 z_sc <- (cbdata$tripduration-tdur.mean)/tdur.sd
-
 #creating subset of data for z_sc<3
 bikedata.z3 <- subset(cbdata, z_sc<3)
 ```
 
+The same statistics are calculated for the subset:
+
 ```{r}
 # Computing same calculation for data without outliers
-dim(cbdata)
-summary(cbdata$tripduration)
-sd(cbdata$tripduration)
 
-dim(bikedata.z3)
-summary(bikedata.z3$tripduration)
-sd(bikedata.z3$tripduration)
+bikedata.z3.count <- dim(bikedata.z3)[1]
+tdur.z3.mean <- mean(bikedata.z3$tripduration)
+tdur.z3.var <- var(bikedata.z3$tripduration)
+tdur.z3.sd <- sd(bikedata.z3$tripduration)
+tdur.z3.min <- min(bikedata.z3$tripduration)
+tdur.z3.max <- max(bikedata.z3$tripduration)
+tdur.z3.median <- median(bikedata.z3$tripduration)
+tdur.z3.qtile <- quantile(bikedata.z3$tripduration)
 
+```
+
+|symbol         |description                        |value           |
+|:--------------|:---------------------------------:|---------------:|
+|`bikedata.z3.count` |number of observations in `bikedata.z3` |`r bikedata.z3.count`|
+|`tdur.z3.mean`    |mean trip duration                 |`r tdur.z3.mean`   |  
+|`tdur.z3.var`     |variance of trip duration          |`r round(tdur.z3.var, 0)`|
+|`tdur.z3.sd`      |standard deviation of trip duration|`r tdur.z3.sd`     |
+|`tdur.z3.min`     |minimum trip duration              |`r tdur.z3.min`    |
+|`tdur.z3.max`     |maximum trip duration              |`r tdur.z3.max`    |
+|`tdur.z3.median`  |median trip duration               |`r tdur.z3.median` |
+
+
+The quartile values for the subset are calculated in the vector `tdur.z3.qtile`:
+```{r}
+tdur.z3.qtile
+iqr.z3 = tdur.z3.qtile[4]-tdur.z3.qtile[2]
+```
+
+The **central tendency** for the data in January, after removing the *z*>3 outliers, is that the average (mean) trip duration is slightly more than 10 minutes (`r tdur.z3.mean` sec). Half of the trips took less than the median time of `r tdur.z3.median` sec, about 8 1/2 minutes.
+
+The **dispersion** of the data in January indicate that the middle half of all rides (again, after removing the *z*>3 outliers), given by the inner quartile range (IQR) `tdur.z3.qtile[4] - tdur.z3.qtile[2]` spanned a range of `r tdur.z3.qtile[4] - tdur.z3.qtile[2]` sec. The total range for all of the data, `tdur.z3.max - tdur.z3.min` is a little under an hour, `r tdur.z3.max-tdur.z3.min` sec.
+
+**Removing outliers** had little effect on the quartile calculations: the median shifted `tdur.median - tdur.z3.median = ` `r tdur.median-tdur.z3.median` sec, and the IQR was reduced by only `iqr - iqr.z3 = ` `r iqr-iqr.z3` sec. However, the mean shifted by a significant amount, `tdur.mean - tdur.z3.mean = ` `r tdur.mean-tdur.z3.mean` sec. This is due to removing a few very large data points skewing mean. This is observed by noticing that the overall range reduced from `r tdur.max-tdur.min` sec to `r tdur.z3.max-tdur.z3.min` sec.
+
+```{r}
 #histograms of tdur and log(tdur) for all data points and the z_sc<3 subset
 par(mfrow=c(2,2))
 hist(cbdata$tripduration, main = "Trip Duration", xlab = "time (sec)", col='red')
 hist(log(cbdata$tripduration), main = "log(Trip Duration)", xlab = "log(time (sec)", col='red')
 hist(bikedata.z3$tripduration, main = "Trip Duration, z_sc<3", xlab = "time (sec)", col='red')
 hist(log(bikedata.z3$tripduration), main = "log(Trip Duration, z_sx<3)", xlab = "log(time (sec))", col='red')
+```
 
 #create subsets by usertype
 bikedata.subs <- subset(cbdata, cbdata$usertype=='Subscriber')
@@ -81,7 +118,6 @@ bikedata.cust.count <- dim(bikedata.cust)[1]
 bikedata.subs.count <- dim(bikedata.subs)[1]
 bikedata.z3.cust.count <- dim(bikedata.z3.cust)[1]
 bikedata.z3.subs.count <- dim(bikedata.z3.subs)[1]
-
 
 #verify that the subsets capture all data (i.e., check for blank or mislabeled usertype)
 test_msg <- 'Counts match!'    #assume equal
