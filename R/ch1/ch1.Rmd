@@ -10,7 +10,8 @@ output: pdf_document
 options('scipen'=2, 'digits' = 2)
 ```
 
-#Complete January 2015 data set
+#1. Summary statistics
+##Complete January 2015 data set
 
 For the first part of the challenge, we are asked to provide the basic descriptive statistics for the Citibike data set from January 2015. We begin by importing the .csv data into a data frame named `cbdata`:
 
@@ -56,7 +57,7 @@ tdur.iqr = tdur.qtile[4]-tdur.qtile[2]
 |`tdur.range`   |total range of trip duration values|`r tdur.range`  |
 |`tdur.iqr`     |inner quartile range of trip duration values|`r tdur.iqr`|
 
-#Removing outliers
+##Removing outliers
 Outliers are then removed by *z*-score. Observations with a *z*-score greater than 3 (more than three standard deviations from the mean) are removed from the set using the `subset` function:
 
 ```{r}
@@ -99,23 +100,29 @@ tdur.z3.iqr = tdur.z3.qtile[4]-tdur.z3.qtile[2]
 |`tdur.z3.range`   |total range of trip duration values|`r tdur.z3.range`  |
 |`tdur.z3.iqr`     |inner quartile range of trip duration values|`r tdur.z3.iqr`|
 
+##Discussion
 The **central tendency** for the data in January, after removing the *z*>3 outliers, is that the average (mean) trip duration is slightly more than 10 minutes (`r tdur.z3.mean` sec). Half of the trips took less than the median time of `r tdur.z3.median` sec, about 8 1/2 minutes.
 
 The **dispersion** of the data in January indicate that the middle half of all rides (again, after removing the *z*>3 outliers), given by the IQR spanned a range of `r tdur.z3.iqr` sec. The total range for all of the data is a little under an hour, `r tdur.z3.range` sec.
 
 **Removing outliers** had little effect on the quartile calculations: the median shifted just `tdur.median - tdur.z3.median = ` `r tdur.median-tdur.z3.median` sec, and the IQR was reduced by only `tdur.iqr - tdur.z3.iqr = ` `r tdur.iqr-tdur.z3.iqr` sec. However, the mean shifted by a significant amount, `tdur.mean - tdur.z3.mean = ` `r tdur.mean-tdur.z3.mean` sec. This is due to removing `cbdata.count - cbdata.z3.count =` `r cbdata.count - cbdata.z3.count` data points skewing the mean. The overall range reduced from `r tdur.range` sec to `r tdur.z3.range` sec.
 
-#Histograms of 
+#2. Visualization
+##Histograms for `cbdata` and `cbdata.z3`
+Here we plot histograms for both the full set and *z*-score reduced set. The log-transformed data is also plotted, which is particularly useful for the full data set.
+
 ```{r}
 #histograms of tdur and log(tdur) for all data points and the z_sc<3 subset
 par(mfrow=c(2,2))
 hist(cbdata$tripduration, main = "Trip Duration", xlab = "time (sec)", col='blue')
 hist(log(cbdata$tripduration), main = "log(Trip Duration)", xlab = "log(time (sec))", col='blue')
 hist(cbdata.z3$tripduration, main = "Trip Duration, z_sc<3", xlab = "time (sec)", col='orange')
-hist(log(cbdata.z3$tripduration), main = "log(Trip Duration), z_sx<3", xlab = "log(time (sec))", col='orange')
+hist(log(cbdata.z3$tripduration), main = "log(Trip Duration), z_sc<3", xlab = "log(time (sec))", col='orange')
 ```
 
-#Visualization by `usertype`
+Visually, the log-transformed data appears to fit a normal distribution, though other tests (which we'll no doubt learn and are out of this assignment's scope) can assess this.
+
+##Visualization by `usertype`
 First we use the `subset` function to parse out new data frames by `usertype`. There are two `usertype`s, `Subscriber` and `Customer`. After creating the subsets for both the full data set and the *z*-score reduced set, we count the observations and verify that we haven't missed any blanks or mislabeled points.
 
 ```{r}
@@ -131,33 +138,34 @@ cbdata.subs.count <- dim(cbdata.subs)[1]
 cbdata.z3.cust.count <- dim(cbdata.z3.cust)[1]
 cbdata.z3.subs.count <- dim(cbdata.z3.subs)[1]
 ```
-||**Complete data set**|**Outlier-removed set**|
-|subset sums|cbdata.cust.count + cbdata.subs.count|cbdata.z3.cust.count + cbdata.z3.subs.count|
-|total counts|cbdata.count|cbdata.z3.count|
-```{r}
-#verify that the subsets capture all data (i.e., check for blank or mislabeled usertype)
-test_msg <- 'Counts match!'    #assume equal
-if (cbdata.cust.count + cbdata.subs.count !=cbdata.count) {test_msg <- 'Counts do not match!'} #change msg if not eq.
-test_msg   #print message
-```
 
+|            |`cbdata`                             |`cbdata.z3`            |
+|-----------:|:-----------------------------------:|:---------------------:|
+|subset sums |`r cbdata.cust.count + cbdata.subs.count`|`r cbdata.z3.cust.count + cbdata.z3.subs.count`|
+|total counts|`r cbdata.count`                         |`r cbdata.z3.count`|
 
+Now we visualize the subsets by producing histograms and boxplots.
 ```{r}
 #histograms of tdur by usertype for z_sc<3 subsets
 par(mfrow=c(2,2))
-hist(cbdata.z3.subs$tripduration, main = "Subscriber Trip Duration", xlab = "time (sec)", col='red')
-hist(log(cbdata.z3.subs$tripduration), main = "log(Subscriber Trip Duration)", xlab = "log(time (sec))", col='red')
+hist(cbdata.z3.subs$tripduration, main = "Subscriber Trip Duration", xlab = "time (sec)", col='green')
+hist(log(cbdata.z3.subs$tripduration), main = "log(Subscriber Trip Duration)", xlab = "log(time (sec))", col='green')
 hist(cbdata.z3.cust$tripduration, main = "Customer Trip Duration", xlab = "time (sec)", col='red')
 hist(log(cbdata.z3.cust$tripduration), main = "log(Customer Trip Duration)", xlab = "log(time (sec))", col='red')
 
 #and boxplots of same
-boxplot(cbdata.z3.subs$tripduration, main='Boxplot of subscriber Trip Duration', xlab='time(sec)')
-boxplot(log(cbdata.z3.subs$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
-boxplot(cbdata.z3.cust$tripduration, main='Boxplot of subscriber Trip Duration', xlab='time(sec)')
-boxplot(log(cbdata.z3.cust$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
-
-#alternate presentation
 par(mfrow=c(1,2))
-boxplot(tripduration ~ usertype, data=cbdata.z3)
-boxplot(log(tripduration) ~ usertype, data=cbdata.z3)
+boxplot(tripduration ~ usertype, data=cbdata.z3, main='Boxplot of subscriber Trip Duration', ylab='time(sec)')
+boxplot(log(tripduration) ~ usertype, data=cbdata.z3, main='Boxplot of subscriber Trip Duration', ylab='log(time(sec))')
 ```
+
+##Discussion
+Before answering the posed questions, we note that the shapes of the histograms for the two different usertypes are markedly different. Indeed, the log-transform of the `Subscriber` subset has the same normal-looking shape as the outlier-removed data at large. This is not suprising since `Subscriber`s account for `r cbdata.subs.count/cbdata.count * 100`% of the data. The histogram of the `Customer` subset, however, has a much different shape, and the log-transform does *not* appear normally-shaped. This suggests that the trip patterns of `Customer`s and `Subscriber`s are significantly different.
+
+Outliers in data sets will create longer tails in histograms and more data points beyond the boxplot whiskers. To visualize the complete data set, there will be a loss of resolution in both types of graphs. 
+
+> In a histogram, there will be many sparsely populated bins in the tails, with most of the observations piled into just a few bins around the median.
+
+> In a boxplot, the outliers will dominate the axis along which the values are plotted due to their range. Effectively this compresses the IQR into a smaller space on the graph, making the visualization less effective. 
+
+From the discussion of the desciptive statistics above, we can hypothesize that the histograms and boxplots for the data sets including outliers will suffer the effects identified above.
