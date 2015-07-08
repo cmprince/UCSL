@@ -5,6 +5,11 @@ date: "07/07/2015"
 output: pdf_document
 ---
 
+```{r setup, echo=FALSE}
+#set display options for output values in document
+options('scipen'=2, 'digits' = 2)
+```
+
 For the first part of the challenge, we are asked to provide the basic descriptive statistics for the Citibike data set from January 2015. We begin by importing the .csv data.
 
 ```{r}
@@ -23,13 +28,18 @@ cbdata.count <- dim(cbdata)[1]  #1st element of dim() vector is the number of ob
 tdur.mean <- mean(cbdata$tripduration)
 tdur.var <- var(cbdata$tripduration)
 tdur.sd <- sd(cbdata$tripduration)
-
 tdur.min <- min(cbdata$tripduration)
 tdur.max <- max(cbdata$tripduration)
+tdur.range <- tdur.max - tdur.min
 tdur.median <- median(cbdata$tripduration)
 tdur.qtile <- quantile(cbdata$tripduration)
+```
 
-options('scipen'=2, 'digits' = 2)
+`tdur.qtile` is the vector of values associated with the quantiles. After reporting them, we use the fourth and second elements (corresponding to the first and third quartiles) to calculate the *inner quartile range*:
+
+```{r}
+tdur.qtile
+tdur.iqr = tdur.qtile[4]-tdur.qtile[2]
 ```
 
 |symbol         |description                        |value           |
@@ -38,17 +48,13 @@ options('scipen'=2, 'digits' = 2)
 |`tdur.mean`    |mean trip duration                 |`r tdur.mean`   |  
 |`tdur.var`     |variance of trip duration          |`r round(tdur.var, 0)`|
 |`tdur.sd`      |standard deviation of trip duration|`r tdur.sd`     |
+|`tdur.median`  |median trip duration               |`r tdur.median` |
 |`tdur.min`     |minimum trip duration              |`r tdur.min`    |
 |`tdur.max`     |maximum trip duration              |`r tdur.max`    |
-|`tdur.median`  |median trip duration               |`r tdur.median` |
+|`tdur.range`   |total range of trip duration values|`r tdur.range`  |
+|`tdur.iqr`     |inner quartile range of trip duration values|`r tdur.iqr`|
 
-
-The quartile values are calculated in the vector `tdur.qtile`, which we use to calculate the *inner quartile range*:
-```{r}
-tdur.qtile
-iqr = tdur.qtile[4]-tdur.qtile[2]
-```
-
+#Removing outliers
 Outliers are then removed by *z*-score. Observations with a *z*-score greater than 3 (more than three standard deviations from the mean) are removed from the set using the `subset` function:
 
 ```{r}
@@ -56,7 +62,7 @@ Outliers are then removed by *z*-score. Observations with a *z*-score greater th
 #COMPUTING Z-SCORE [from JCB code]
 z_sc <- (cbdata$tripduration-tdur.mean)/tdur.sd
 #creating subset of data for z_sc<3
-bikedata.z3 <- subset(cbdata, z_sc<3)
+cbdata.z3 <- subset(cbdata, z_sc<3)
 ```
 
 The same statistics are calculated for the subset:
@@ -64,80 +70,79 @@ The same statistics are calculated for the subset:
 ```{r}
 # Computing same calculation for data without outliers
 
-bikedata.z3.count <- dim(bikedata.z3)[1]
-tdur.z3.mean <- mean(bikedata.z3$tripduration)
-tdur.z3.var <- var(bikedata.z3$tripduration)
-tdur.z3.sd <- sd(bikedata.z3$tripduration)
-tdur.z3.min <- min(bikedata.z3$tripduration)
-tdur.z3.max <- max(bikedata.z3$tripduration)
-tdur.z3.median <- median(bikedata.z3$tripduration)
-tdur.z3.qtile <- quantile(bikedata.z3$tripduration)
+cbdata.z3.count <- dim(cbdata.z3)[1]
+tdur.z3.mean <- mean(cbdata.z3$tripduration)
+tdur.z3.var <- var(cbdata.z3$tripduration)
+tdur.z3.sd <- sd(cbdata.z3$tripduration)
+tdur.z3.min <- min(cbdata.z3$tripduration)
+tdur.z3.max <- max(cbdata.z3$tripduration)
+tdur.z3.range <- tdur.z3.max - tdur.z3.min
+tdur.z3.median <- median(cbdata.z3$tripduration)
+tdur.z3.qtile <- quantile(cbdata.z3$tripduration)
+
+tdur.z3.qtile
+tdur.z3.iqr = tdur.z3.qtile[4]-tdur.z3.qtile[2]
 
 ```
 
 |symbol         |description                        |value           |
 |:--------------|:---------------------------------:|---------------:|
-|`bikedata.z3.count` |number of observations in `bikedata.z3` |`r bikedata.z3.count`|
+|`cbdata.z3.count` |number of observations in `cbdata.z3` |`r cbdata.z3.count`|
 |`tdur.z3.mean`    |mean trip duration                 |`r tdur.z3.mean`   |  
 |`tdur.z3.var`     |variance of trip duration          |`r round(tdur.z3.var, 0)`|
 |`tdur.z3.sd`      |standard deviation of trip duration|`r tdur.z3.sd`     |
+|`tdur.z3.median`  |median trip duration               |`r tdur.z3.median` |
 |`tdur.z3.min`     |minimum trip duration              |`r tdur.z3.min`    |
 |`tdur.z3.max`     |maximum trip duration              |`r tdur.z3.max`    |
-|`tdur.z3.median`  |median trip duration               |`r tdur.z3.median` |
-
-
-The quartile values for the subset are calculated in the vector `tdur.z3.qtile`:
-```{r}
-tdur.z3.qtile
-iqr.z3 = tdur.z3.qtile[4]-tdur.z3.qtile[2]
-```
+|`tdur.z3.range`   |total range of trip duration values|`r tdur.z3.range`  |
+|`tdur.z3.iqr`     |inner quartile range of trip duration values|`r tdur.z3.iqr`|
 
 The **central tendency** for the data in January, after removing the *z*>3 outliers, is that the average (mean) trip duration is slightly more than 10 minutes (`r tdur.z3.mean` sec). Half of the trips took less than the median time of `r tdur.z3.median` sec, about 8 1/2 minutes.
 
-The **dispersion** of the data in January indicate that the middle half of all rides (again, after removing the *z*>3 outliers), given by the IQR spanned a range of `r iqr.z3` sec. The total range for all of the data, `tdur.z3.max - tdur.z3.min` is a little under an hour, `r tdur.z3.max-tdur.z3.min` sec.
+The **dispersion** of the data in January indicate that the middle half of all rides (again, after removing the *z*>3 outliers), given by the IQR spanned a range of `r tdur.z3.iqr` sec. The total range for all of the data is a little under an hour, `r tdur.z3.range` sec.
 
-**Removing outliers** had little effect on the quartile calculations: the median shifted `tdur.median - tdur.z3.median = ` `r tdur.median-tdur.z3.median` sec, and the IQR was reduced by only `iqr - iqr.z3 = ` `r iqr-iqr.z3` sec. However, the mean shifted by a significant amount, `tdur.mean - tdur.z3.mean = ` `r tdur.mean-tdur.z3.mean` sec. This is due to removing a few very large data points skewing mean. This is observed by noticing that the overall range reduced from `r tdur.max-tdur.min` sec to `r tdur.z3.max-tdur.z3.min` sec.
+**Removing outliers** had little effect on the quartile calculations: the median shifted `tdur.median - tdur.z3.median = ` `r tdur.median-tdur.z3.median` sec, and the IQR was reduced by only `tdur.iqr - tdur.z3.iqr = ` `r tdur.iqr-tdur.z3.iqr` sec. However, the mean shifted by a significant amount, `tdur.mean - tdur.z3.mean = ` `r tdur.mean-tdur.z3.mean` sec. This is due to removing a few very large data points skewing mean. This is observed by noticing that the overall range reduced from `r tdur.range` sec to `r tdur.z3.range` sec.
 
 ```{r}
 #histograms of tdur and log(tdur) for all data points and the z_sc<3 subset
 par(mfrow=c(2,2))
 hist(cbdata$tripduration, main = "Trip Duration", xlab = "time (sec)", col='red')
 hist(log(cbdata$tripduration), main = "log(Trip Duration)", xlab = "log(time (sec)", col='red')
-hist(bikedata.z3$tripduration, main = "Trip Duration, z_sc<3", xlab = "time (sec)", col='red')
-hist(log(bikedata.z3$tripduration), main = "log(Trip Duration, z_sx<3)", xlab = "log(time (sec))", col='red')
+hist(cbdata.z3$tripduration, main = "Trip Duration, z_sc<3", xlab = "time (sec)", col='red')
+hist(log(cbdata.z3$tripduration), main = "log(Trip Duration, z_sx<3)", xlab = "log(time (sec))", col='red')
 
 #create subsets by usertype
-bikedata.subs <- subset(cbdata, cbdata$usertype=='Subscriber')
-bikedata.cust <- subset(cbdata, cbdata$usertype=='Customer')
-bikedata.z3.subs <- subset(bikedata.z3, bikedata.z3$usertype=='Subscriber')
-bikedata.z3.cust <- subset(bikedata.z3, bikedata.z3$usertype=='Customer')
+cbdata.subs <- subset(cbdata, cbdata$usertype=='Subscriber')
+cbdata.cust <- subset(cbdata, cbdata$usertype=='Customer')
+cbdata.z3.subs <- subset(cbdata.z3, cbdata.z3$usertype=='Subscriber')
+cbdata.z3.cust <- subset(cbdata.z3, cbdata.z3$usertype=='Customer')
 
 #count the elements of the subsets
-bikedata.cust.count <- dim(bikedata.cust)[1]
-bikedata.subs.count <- dim(bikedata.subs)[1]
-bikedata.z3.cust.count <- dim(bikedata.z3.cust)[1]
-bikedata.z3.subs.count <- dim(bikedata.z3.subs)[1]
+cbdata.cust.count <- dim(cbdata.cust)[1]
+cbdata.subs.count <- dim(cbdata.subs)[1]
+cbdata.z3.cust.count <- dim(cbdata.z3.cust)[1]
+cbdata.z3.subs.count <- dim(cbdata.z3.subs)[1]
 
 #verify that the subsets capture all data (i.e., check for blank or mislabeled usertype)
 test_msg <- 'Counts match!'    #assume equal
-if (bikedata.cust.count + bikedata.subs.count !=cbdata.count) {test_msg <- 'Counts do not match!'} #change msg if not eq.
+if (cbdata.cust.count + cbdata.subs.count !=cbdata.count) {test_msg <- 'Counts do not match!'} #change msg if not eq.
 test_msg   #print message
 
 #histograms of tdur by usertype for z_sc<3 subsets
 par(mfrow=c(2,2))
-hist(bikedata.z3.subs$tripduration, main = "Subscriber Trip Duration", xlab = "time (sec)", col='red')
-hist(log(bikedata.z3.subs$tripduration), main = "log(Subscriber Trip Duration)", xlab = "log(time (sec))", col='red')
-hist(bikedata.z3.cust$tripduration, main = "Customer Trip Duration", xlab = "time (sec)", col='red')
-hist(log(bikedata.z3.cust$tripduration), main = "log(Customer Trip Duration)", xlab = "log(time (sec))", col='red')
+hist(cbdata.z3.subs$tripduration, main = "Subscriber Trip Duration", xlab = "time (sec)", col='red')
+hist(log(cbdata.z3.subs$tripduration), main = "log(Subscriber Trip Duration)", xlab = "log(time (sec))", col='red')
+hist(cbdata.z3.cust$tripduration, main = "Customer Trip Duration", xlab = "time (sec)", col='red')
+hist(log(cbdata.z3.cust$tripduration), main = "log(Customer Trip Duration)", xlab = "log(time (sec))", col='red')
 
 #and boxplots of same
-boxplot(bikedata.z3.subs$tripduration, main='Boxplot of subscriber Trip Duration', xlab='time(sec)')
-boxplot(log(bikedata.z3.subs$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
-boxplot(bikedata.z3.cust$tripduration, main='Boxplot of subscriber Trip Duration', xlab='time(sec)')
-boxplot(log(bikedata.z3.cust$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
+boxplot(cbdata.z3.subs$tripduration, main='Boxplot of subscriber Trip Duration', xlab='time(sec)')
+boxplot(log(cbdata.z3.subs$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
+boxplot(cbdata.z3.cust$tripduration, main='Boxplot of subscriber Trip Duration', xlab='time(sec)')
+boxplot(log(cbdata.z3.cust$tripduration), main='Boxplot of subscriber Trip Duration', xlab='log(time(sec))')
 
 #alternate presentation
 par(mfrow=c(1,2))
-boxplot(tripduration ~ usertype, data=bikedata.z3)
-boxplot(log(tripduration) ~ usertype, data=bikedata.z3)
+boxplot(tripduration ~ usertype, data=cbdata.z3)
+boxplot(log(tripduration) ~ usertype, data=cbdata.z3)
 ```
