@@ -10,7 +10,9 @@ output: pdf_document
 options('scipen'=2, 'digits' = 2)
 ```
 
-For the first part of the challenge, we are asked to provide the basic descriptive statistics for the Citibike data set from January 2015. We begin by importing the .csv data.
+#Complete January 2015 data set
+
+For the first part of the challenge, we are asked to provide the basic descriptive statistics for the Citibike data set from January 2015. We begin by importing the .csv data into a data frame named `cbdata`:
 
 ```{r}
 #import Jan 2015 CitiBike data from csv file, include a header line
@@ -101,16 +103,22 @@ The **central tendency** for the data in January, after removing the *z*>3 outli
 
 The **dispersion** of the data in January indicate that the middle half of all rides (again, after removing the *z*>3 outliers), given by the IQR spanned a range of `r tdur.z3.iqr` sec. The total range for all of the data is a little under an hour, `r tdur.z3.range` sec.
 
-**Removing outliers** had little effect on the quartile calculations: the median shifted `tdur.median - tdur.z3.median = ` `r tdur.median-tdur.z3.median` sec, and the IQR was reduced by only `tdur.iqr - tdur.z3.iqr = ` `r tdur.iqr-tdur.z3.iqr` sec. However, the mean shifted by a significant amount, `tdur.mean - tdur.z3.mean = ` `r tdur.mean-tdur.z3.mean` sec. This is due to removing a few very large data points skewing mean. This is observed by noticing that the overall range reduced from `r tdur.range` sec to `r tdur.z3.range` sec.
+**Removing outliers** had little effect on the quartile calculations: the median shifted just `tdur.median - tdur.z3.median = ` `r tdur.median-tdur.z3.median` sec, and the IQR was reduced by only `tdur.iqr - tdur.z3.iqr = ` `r tdur.iqr-tdur.z3.iqr` sec. However, the mean shifted by a significant amount, `tdur.mean - tdur.z3.mean = ` `r tdur.mean-tdur.z3.mean` sec. This is due to removing `cbdata.count - cbdata.z3.count =` `r cbdata.count - cbdata.z3.count` data points skewing the mean. The overall range reduced from `r tdur.range` sec to `r tdur.z3.range` sec.
 
+#Histograms of 
 ```{r}
 #histograms of tdur and log(tdur) for all data points and the z_sc<3 subset
 par(mfrow=c(2,2))
-hist(cbdata$tripduration, main = "Trip Duration", xlab = "time (sec)", col='red')
-hist(log(cbdata$tripduration), main = "log(Trip Duration)", xlab = "log(time (sec)", col='red')
-hist(cbdata.z3$tripduration, main = "Trip Duration, z_sc<3", xlab = "time (sec)", col='red')
-hist(log(cbdata.z3$tripduration), main = "log(Trip Duration, z_sx<3)", xlab = "log(time (sec))", col='red')
+hist(cbdata$tripduration, main = "Trip Duration", xlab = "time (sec)", col='blue')
+hist(log(cbdata$tripduration), main = "log(Trip Duration)", xlab = "log(time (sec))", col='blue')
+hist(cbdata.z3$tripduration, main = "Trip Duration, z_sc<3", xlab = "time (sec)", col='orange')
+hist(log(cbdata.z3$tripduration), main = "log(Trip Duration), z_sx<3", xlab = "log(time (sec))", col='orange')
+```
 
+#Visualization by `usertype`
+First we use the `subset` function to parse out new data frames by `usertype`. There are two `usertype`s, `Subscriber` and `Customer`. After creating the subsets for both the full data set and the *z*-score reduced set, we count the observations and verify that we haven't missed any blanks or mislabeled points.
+
+```{r}
 #create subsets by usertype
 cbdata.subs <- subset(cbdata, cbdata$usertype=='Subscriber')
 cbdata.cust <- subset(cbdata, cbdata$usertype=='Customer')
@@ -122,12 +130,19 @@ cbdata.cust.count <- dim(cbdata.cust)[1]
 cbdata.subs.count <- dim(cbdata.subs)[1]
 cbdata.z3.cust.count <- dim(cbdata.z3.cust)[1]
 cbdata.z3.subs.count <- dim(cbdata.z3.subs)[1]
-
+```
+||**Complete data set**|**Outlier-removed set**|
+|subset sums|cbdata.cust.count + cbdata.subs.count|cbdata.z3.cust.count + cbdata.z3.subs.count|
+|total counts|cbdata.count|cbdata.z3.count|
+```{r}
 #verify that the subsets capture all data (i.e., check for blank or mislabeled usertype)
 test_msg <- 'Counts match!'    #assume equal
 if (cbdata.cust.count + cbdata.subs.count !=cbdata.count) {test_msg <- 'Counts do not match!'} #change msg if not eq.
 test_msg   #print message
+```
 
+
+```{r}
 #histograms of tdur by usertype for z_sc<3 subsets
 par(mfrow=c(2,2))
 hist(cbdata.z3.subs$tripduration, main = "Subscriber Trip Duration", xlab = "time (sec)", col='red')
