@@ -1,8 +1,10 @@
 ---
-title: 'UCSL: R Challenge 1'
+title: 'UCSL: R Challenge 1^[Source for this document is at https://github.com/cmprince/UCSL/blob/master/R/ch1/ch1.Rmd]'
 author: "Christopher Prince"
-date: "07/07/2015"
-output: pdf_document
+date: "07/09/2015"
+output: 
+  pdf_document:
+    number_sections: true
 ---
 
 ```{r setup, echo=FALSE}
@@ -10,7 +12,7 @@ output: pdf_document
 options('scipen'=2, 'digits' = 2)
 ```
 
-#1. Summary statistics
+#Summary statistics
 ##Complete January 2015 data set
 
 For the first part of the challenge, we are asked to provide the basic descriptive statistics for the Citibike data set from January 2015. We begin by importing the .csv data into a data frame named `cbdata`:
@@ -38,11 +40,11 @@ tdur.median <- median(cbdata$tripduration)
 tdur.qtile <- quantile(cbdata$tripduration)
 ```
 
-`tdur.qtile` is the vector of values associated with the quantiles. After reporting them, we use the fourth and second elements (corresponding to the first and third quartiles) to calculate the *inner quartile range*:
+`tdur.qtile` is the vector of values associated with the quantiles. After reporting them, we use the fourth and second elements (corresponding to the first and third quartiles) to calculate the *interquartile range*:
 
 ```{r}
 tdur.qtile
-tdur.iqr = tdur.qtile[4]-tdur.qtile[2]
+tdur.iqr <- tdur.qtile[4]-tdur.qtile[2]
 ```
 
 |symbol         |description                        |value           |
@@ -55,14 +57,13 @@ tdur.iqr = tdur.qtile[4]-tdur.qtile[2]
 |`tdur.min`     |minimum trip duration              |`r tdur.min`    |
 |`tdur.max`     |maximum trip duration              |`r tdur.max`    |
 |`tdur.range`   |total range of trip duration values|`r tdur.range`  |
-|`tdur.iqr`     |inner quartile range of trip duration values|`r tdur.iqr`|
+|`tdur.iqr`     |interquartile range of trip duration values|`r tdur.iqr`|
 
 ##Removing outliers
 Outliers are then removed by *z*-score. Observations with a *z*-score greater than 3 (more than three standard deviations from the mean) are removed from the set using the `subset` function:
 
 ```{r}
-
-#COMPUTING Z-SCORE [from JCB code]
+#define z-score
 z_sc <- (cbdata$tripduration-tdur.mean)/tdur.sd
 #creating subset of data for z_sc<3
 cbdata.z3 <- subset(cbdata, z_sc<3)
@@ -84,7 +85,7 @@ tdur.z3.median <- median(cbdata.z3$tripduration)
 tdur.z3.qtile <- quantile(cbdata.z3$tripduration)
 
 tdur.z3.qtile
-tdur.z3.iqr = tdur.z3.qtile[4]-tdur.z3.qtile[2]
+tdur.z3.iqr <- tdur.z3.qtile[4]-tdur.z3.qtile[2]
 
 ```
 
@@ -98,7 +99,7 @@ tdur.z3.iqr = tdur.z3.qtile[4]-tdur.z3.qtile[2]
 |`tdur.z3.min`     |minimum trip duration              |`r tdur.z3.min`    |
 |`tdur.z3.max`     |maximum trip duration              |`r tdur.z3.max`    |
 |`tdur.z3.range`   |total range of trip duration values|`r tdur.z3.range`  |
-|`tdur.z3.iqr`     |inner quartile range of trip duration values|`r tdur.z3.iqr`|
+|`tdur.z3.iqr`     |interquartile range of trip duration values|`r tdur.z3.iqr`|
 
 ##Discussion
 The **central tendency** for the data in January, after removing the *z*>3 outliers, is that the average (mean) trip duration is slightly more than 10 minutes (`r tdur.z3.mean` sec). Half of the trips took less than the median time of `r tdur.z3.median` sec, about 8 1/2 minutes.
@@ -107,11 +108,11 @@ The **dispersion** of the data in January indicate that the middle half of all r
 
 **Removing outliers** had little effect on the quartile calculations: the median shifted just `tdur.median - tdur.z3.median = ` `r tdur.median-tdur.z3.median` sec, and the IQR was reduced by only `tdur.iqr - tdur.z3.iqr = ` `r tdur.iqr-tdur.z3.iqr` sec. However, the mean shifted by a significant amount, `tdur.mean - tdur.z3.mean = ` `r tdur.mean-tdur.z3.mean` sec. This is due to removing `cbdata.count - cbdata.z3.count =` `r cbdata.count - cbdata.z3.count` data points skewing the mean. The overall range reduced from `r tdur.range` sec to `r tdur.z3.range` sec.
 
-#2. Visualization
+#Visualization
 ##Histograms for `cbdata` and `cbdata.z3`
 Here we plot histograms for both the full set and *z*-score reduced set. The log-transformed data is also plotted, which is particularly useful for the full data set.
 
-```{r}
+```{r, tidy=TRUE}
 #histograms of tdur and log(tdur) for all data points and the z_sc<3 subset
 par(mfrow=c(2,2))
 hist(cbdata$tripduration, main = "Trip Duration", xlab = "time (sec)", col='blue')
@@ -145,7 +146,7 @@ cbdata.z3.subs.count <- dim(cbdata.z3.subs)[1]
 |total counts|`r cbdata.count`                         |`r cbdata.z3.count`|
 
 Now we visualize the subsets by producing histograms and boxplots.
-```{r}
+```{r, tidy=TRUE}
 #histograms of tdur by usertype for z_sc<3 subsets
 par(mfrow=c(2,2))
 hist(cbdata.z3.subs$tripduration, main = "Subscriber Trip Duration", xlab = "time (sec)", col='green')
@@ -155,12 +156,12 @@ hist(log(cbdata.z3.cust$tripduration), main = "log(Customer Trip Duration)", xla
 
 #and boxplots of same
 par(mfrow=c(1,2))
-boxplot(tripduration ~ usertype, data=cbdata.z3, main='Boxplot of subscriber Trip Duration', ylab='time(sec)')
-boxplot(log(tripduration) ~ usertype, data=cbdata.z3, main='Boxplot of subscriber Trip Duration', ylab='log(time(sec))')
+boxplot(tripduration ~ usertype, data=cbdata.z3, main='Boxplot of Trip Duration', ylab='time(sec)')
+boxplot(log(tripduration) ~ usertype, data=cbdata.z3, main='Boxplot of log(Trip Duration)', ylab='log(time(sec))')
 ```
 
 ##Discussion
-Before answering the posed questions, we note that the shapes of the histograms for the two different usertypes are markedly different. Indeed, the log-transform of the `Subscriber` subset has the same normal-looking shape as the outlier-removed data at large. This is not suprising since `Subscriber`s account for `r cbdata.subs.count/cbdata.count * 100`% of the data. The histogram of the `Customer` subset, however, has a much different shape, and the log-transform does *not* appear normally-shaped. This suggests that the trip patterns of `Customer`s and `Subscriber`s are significantly different.
+Before answering the posed questions, we note that the shapes of the histograms for the two different usertypes are markedly different. Indeed, the log-transform of the `Subscriber` subset has the same normal-looking shape as the outlier-removed data at large. This is not surprising since `Subscriber`s account for `r cbdata.subs.count/cbdata.count * 100`% of the data. The histogram of the `Customer` subset, however, has a much different shape, and the log-transform does *not* appear normally-shaped. This suggests that the trip patterns of `Customer`s and `Subscriber`s are significantly different.
 
 Outliers in data sets will create longer tails in histograms and more data points beyond the boxplot whiskers. To visualize the complete data set, there will be a loss of resolution in both types of graphs. 
 
@@ -168,4 +169,4 @@ Outliers in data sets will create longer tails in histograms and more data point
 
 > In a boxplot, the outliers will dominate the axis along which the values are plotted due to their range. Effectively this compresses the IQR into a smaller space on the graph, making the visualization less effective. 
 
-From the discussion of the desciptive statistics above, we can hypothesize that the histograms and boxplots for the data sets including outliers will suffer the effects identified above.
+From the discussion of the descriptive statistics above, we can hypothesize that the histograms and boxplots for the data sets including outliers will suffer the effects identified above.
