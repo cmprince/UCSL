@@ -45,6 +45,7 @@ yfitlog<-dnorm(xfitlog,mean=xbarlog,sd=slog)
 lines(xfitlog,yfitlog,lwd=3,col='green')
 # Excellent. Now, we will run an experiment by creating samples of the lognormal distribution and recording their medians:
 
+med<-array()
 for(i in 1:10000){
   m<-rlnorm(n=500)
   med[i]<-median(m)
@@ -65,7 +66,7 @@ lines(xfitmed, yfitmed, lwd=3, col='blue')
 med_h0 <- 900   #the hypothesized median
 alpha <- 0.05 #significance level
 
-(xmed-med_h0)/(s/sqrt(n))
+t1<-(xmed-med_h0)/(s/sqrt(n))
 qt(1-alpha,df=n-1)
-
+pt(t1,df = n-1)
 # Because the t-statistic is not greater than the critical value, we do not reject the null hypothesis.
