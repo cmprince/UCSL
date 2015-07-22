@@ -68,5 +68,43 @@ alpha <- 0.05 #significance level
 
 t1<-(xmed-med_h0)/(s/sqrt(n))
 qt(1-alpha,df=n-1)
+#Or, the p-value:
 pt(t1,df = n-1)
+
 # Because the t-statistic is not greater than the critical value, we do not reject the null hypothesis.
+
+###############
+#Problem 2
+###############
+
+#Subset the overtime data:
+cbd_ot<-subset(cbdata, tripduration>2700)
+med_ot<-median(cbd_ot$tripduration)
+
+# H_0: median(OT tripduration) = 7200
+# H_a: median(OT tripduration) != 7200
+# Since the null hypothesis tests for an equality, we need a two-tailed t-test.
+
+med_ot_h0 <- 7200
+alpha <- 0.05
+s_ot <- sd(cbd_ot$tripduration)
+n_ot <- dim(cbd_ot)[1]
+  
+t2 <- (med_ot-med_ot_h0)/(s_ot/sqrt(n_ot))
+qt(1-alpha/2,df=n_ot-1)
+
+# Since the t-statistic is less than the negative critical value, we reject the null hypothesis that the median 
+# for overtime is 2 hours.
+
+###############
+#Problem 3
+###############
+
+#H_0: no difference in OT mean by gender
+#H_a: difference in OT mean by gender
+
+anova <- aov(tripduration ~ gender, data = cbd_ot)
+summary(anova)
+#The critical value for the test is:
+qf(1-alpha,1,214)
+#Since the F statistic is not greater than the critical value, we do not reject the null hypothesis
