@@ -51,7 +51,7 @@ boxplot(cbdata$tripduration, ylim=c(0,3600))
 
 Before we even do any analysis, we note that the null hypothesis is heavily favored in this sampling, since 68.2% of values are less than 900. It would be remarkable for a sample of over 20,000 observations be so off-balance from a true median over 900. Nevertheless, we perform the calculations to support this.
 
-Because $n=20853$, and the histogram is not wildly skewed (out-of-normal), CLT applies. But how do we account for the fact that the the t-test hypotheses are not on means? CLT tells us that means of a sufficiently large number of samples from a population of any distribution will themselves distribute normally. Does this apply to medians as well? Intuitively, subsampled medians seem like they should distrubute normally in the same manner that the mean does. Let's run an experiment. First, the histogram suggests that this may follow something like a log-normal distribution. The histogram of the log of the `tripduration`s looks like so:
+Because $n=$ `r n`, and the histogram is not wildly skewed (out-of-normal), CLT applies. But how do we the hypotheses using t-tests when they are on medians and not on means? CLT tells us that means of a sufficiently large number of samples from a population of any distribution will themselves distribute normally. Does this apply to medians as well? Intuitively, subsampled medians seem like they should distrubute normally in the same manner that the mean does. Let's run an experiment. First, the histogram suggests that this may follow something like a log-normal distribution. The histogram of the log of the `tripduration`s looks like so:
 
 ```{r}
 xbarlog<-mean(log(cbdata$tripduration))
@@ -62,7 +62,7 @@ hist(log(cbdata$tripduration), breaks=30, probability = TRUE)
 lines(xfitlog,yfitlog,lwd=3,col='green')
 ```
 
-Looks promising! Now, we will run an experiment by creating 10,000 random samples of the lognormal distribution and recording their medians:
+Looks convincing! It's certainly close enough for us to use the lognormal distribution as a model for the experiment. We will create 10,000 random samples of the lognormal distribution and record their medians:
 
 ```{r}
 med<-array()
@@ -70,8 +70,11 @@ for(i in 1:10000){
   m<-rlnorm(n=500)
   med[i]<-median(m)
 }
+```
 
-# Plotting the histogram and overlaying a normal fit:
+Plotting the histogram of the medians and overlaying a normal fit:
+
+```{r}
 hist(med, breaks=30, probability = TRUE)
 medmean<-mean(med)
 meds<-sd(med)
@@ -84,6 +87,8 @@ Based on this analysis, the sample median distribution is normal, so we can be c
 
 \[t=\frac{\tilde{x} - \tilde{\mu}}{s/\sqrt{n}}\]
 
+The only remaining uncertainty is how to treat the standard deviation *s*. Literature indicates various corrections that can be made to estimate the variance of a sample median, but as we shall see below, such a correction would have to be enormous to have an impact.
+
 ```{r}
 med_h0 <- 900   #the hypothesized median
 alpha <- 0.05 #significance level
@@ -95,18 +100,23 @@ qt(1-alpha,df=n-1)
 pt(t1,df = n-1)
 ```
 
-Because the t-statistic is not greater than the critical value, we do not reject the null hypothesis.
+Because the t-statistic is not greater than the critical value--by quite a large margin--we do not reject the null hypothesis.
 
-#Problem 2
+# *Citi Bike System wants to tackle bike rides incurring in overtime fees, particularly their interest is in rides lasting more than 45min.*
 
-#Subset the overtime data:
+Subset the overtime data:
+
+```{r}
 cbd_ot<-subset(cbdata, tripduration>2700)
 med_ot<-median(cbd_ot$tripduration)
+```
 
-# H_0: median(OT tripduration) = 7200
-# H_a: median(OT tripduration) != 7200
-# Since the null hypothesis tests for an equality, we need a two-tailed t-test.
+$$ H_0: \tilde{\mu}_{OT} = 7200 $$
+$$ H_a: \tilde{\mu}_{OT} \neq 7200 $$
 
+Since the null hypothesis tests for an equality, we need a two-tailed t-test.
+
+```{r}
 med_ot_h0 <- 7200
 alpha <- 0.05
 s_ot <- sd(cbd_ot$tripduration)
@@ -114,17 +124,27 @@ n_ot <- dim(cbd_ot)[1]
   
 t2 <- (med_ot-med_ot_h0)/(s_ot/sqrt(n_ot))
 qt(1-alpha/2,df=n_ot-1)
+```
 
-# Since the t-statistic is less than the negative critical value, we reject the null hypothesis that the median 
-# for overtime is 2 hours.
+Since the t-statistic is less than the negative critical value, we reject the null hypothesis that the median for overtime is 2 hours.
 
-#Problem 3
+# *Citi Bike management thinks that men incur in more overtime fees.  Test this hypothesis by comparing overtime variances across genders.*
 
-#H_0: no difference in OT mean by gender
-#H_a: difference in OT mean by gender
+```{r}
+boxplot(tripduration ~ gender, data=cbd_ot, ylim=c(2500,6000))
+```
 
+$$ H_0: no difference in OT mean by gender $$
+$$ H_a: difference in OT mean by gender $$
+
+```{r}
 anova <- aov(tripduration ~ gender, data = cbd_ot)
 summary(anova)
-#The critical value for the test is:
+```
+
+The critical value for the test is:
+```{r}
 qf(1-alpha,1,214)
-#Since the F statistic is not greater than the critical value, we do not reject the null hypothesis
+```
+
+Since the F statistic is not greater than the critical value, we do not reject the null hypothesis.
