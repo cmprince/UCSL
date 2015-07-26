@@ -9,7 +9,7 @@ output:
 
 ```{r setup, echo=FALSE}
 #set display options for output values in document
-options('scipen'=2, 'digits' = 2)
+#options('scipen'=2, 'digits' = 2)
 #library for prettyprinting quartile tables with kable()
 library(knitr)
 ```
@@ -31,7 +31,8 @@ cbdata <- read.csv(fname, header = TRUE)
 
 ```{r}
 #Print the summary data and calculate the sample parameters n, s, xbar and xmed:
-summary(cbdata$tripduration)
+kable(head(summary(cbdata$tripduration)))
+
 n <- dim(cbdata)[1]
 s <- sd(cbdata$tripduration)
 xbar <- mean(cbdata$tripduration)
@@ -87,7 +88,7 @@ Based on this analysis, the sample median distribution is normal, so we can be c
 
 \[t=\frac{\tilde{x} - \tilde{\mu}}{s/\sqrt{n}}\]
 
-The only remaining uncertainty is how to treat the standard deviation *s*. Literature indicates various corrections that can be made to estimate the variance of a sample median, but as we shall see below, such a correction would have to be enormous to have an impact.
+The only remaining uncertainty is how to adjust the standard deviation *s*.^[The value for the variance of a sample median cited in various online sources is $$s^2 = \frac{1}{4nf(\tilde{\mu})^2}$$. ] But as we shall see below, such a correction would have to be enormous to have an impact on the outcome of the test.
 
 ```{r}
 med_h0 <- 900   #the hypothesized median
