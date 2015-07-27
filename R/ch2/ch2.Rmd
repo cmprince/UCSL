@@ -31,7 +31,7 @@ cbdata <- read.csv(fname, header = TRUE)
 
 ```{r}
 #Print the summary data and calculate the sample parameters n, s, xbar and xmed:
-kable(head(summary(cbdata$tripduration)))
+#kable(head(summary(cbdata$tripduration)))
 
 n <- dim(cbdata)[1]
 s <- sd(cbdata$tripduration)
@@ -49,6 +49,7 @@ lines(xfit, yfit, lwd=3, col='orange')
 boxplot(cbdata$tripduration, ylim=c(0,3600))
 ```
 
+##Determining an analysis method
 
 Before we even do any analysis, we note that the null hypothesis is heavily favored in this sampling, since 68.2% of values are less than 900. It would be remarkable for a sample of over 20,000 observations be so off-balance from a true median over 900. Nevertheless, we perform the calculations to support this.
 
@@ -88,7 +89,7 @@ Based on this analysis, the sample median distribution is normal, so we can be c
 
 \[t=\frac{\tilde{x} - \tilde{\mu}}{s/\sqrt{n}}\]
 
-The only remaining uncertainty is how to adjust the standard deviation *s*.^[The value for the variance of a sample median cited in various online sources is $$s^2 = \frac{1}{4nf(\tilde{\mu})^2}$$. ] But as we shall see below, such a correction would have to be enormous to have an impact on the outcome of the test.
+The only remaining uncertainty is how to adjust the standard deviation *s*.^[The value for the variance of a sample median cited in various online sources is $$s^2 = \frac{1}{4nf(\tilde{\mu})^2}$$. ] But as we shall see below, any such correction would have to be enormous to have an impact on the outcome of the test.
 
 ```{r}
 med_h0 <- 900   #the hypothesized median
@@ -103,6 +104,15 @@ pt(t1,df = n-1)
 
 Because the t-statistic is not greater than the critical value--by quite a large margin--we do not reject the null hypothesis.
 
+##Using an alternative test
+
+The Wilcoxon signed-rank test is used explicitly to test for the median location of a sample.
+```{r}
+wilcox.test(cbdata$tripduration, mu=900, alternative = 'g')
+```
+
+Here, we the p-value must be less than $\alpha$ to reject the null hypothesis. Clearly, it is not, so we do not reject it.
+
 # *Citi Bike System wants to tackle bike rides incurring in overtime fees, particularly their interest is in rides lasting more than 45min.*
 
 Subset the overtime data:
@@ -115,7 +125,8 @@ med_ot<-median(cbd_ot$tripduration)
 $$ H_0: \tilde{\mu}_{OT} = 7200 $$
 $$ H_a: \tilde{\mu}_{OT} \neq 7200 $$
 
-Since the null hypothesis tests for an equality, we need a two-tailed t-test.
+Since the null hypothesis tests for an equality, we need a two-tailed t-test. We reject the hypothesis if the t-statistic is larger than the critical value (or is less than the negative critical value). Using the same value for $\alpha$, we have:
+
 
 ```{r}
 med_ot_h0 <- 7200
@@ -124,6 +135,7 @@ s_ot <- sd(cbd_ot$tripduration)
 n_ot <- dim(cbd_ot)[1]
   
 t2 <- (med_ot-med_ot_h0)/(s_ot/sqrt(n_ot))
+t2
 qt(1-alpha/2,df=n_ot-1)
 ```
 
@@ -135,8 +147,10 @@ Since the t-statistic is less than the negative critical value, we reject the nu
 boxplot(tripduration ~ gender, data=cbd_ot, ylim=c(2500,6000))
 ```
 
-$$ H_0: no difference in OT mean by gender $$
-$$ H_a: difference in OT mean by gender $$
+$$ H_0: \text{no difference in OT mean by gender}$$
+$$ H_a: \text{difference in OT mean by gender}$$
+
+This is exactly the problem posed in the text of this week's lesson, but for the subset of overtime data. Thus, we use ANOVA with the same value of $\alpha = 0.05$:
 
 ```{r}
 anova <- aov(tripduration ~ gender, data = cbd_ot)
@@ -145,7 +159,7 @@ summary(anova)
 
 The critical value for the test is:
 ```{r}
-qf(1-alpha,1,214)
+qf(1-alpha,1,n_ot)
 ```
 
-Since the F statistic is not greater than the critical value, we do not reject the null hypothesis.
+Since the F statistic is not greater than the critical value, we do not reject the null hypothesis. The P-value of 0.853 also indicates that we should not reject the null hypothesis with $\alpha = 0.05$
