@@ -22,16 +22,16 @@ $$H_a: \tilde{\mu} > 900$$
 
 Because the alternative hypothesis is a "greater than" condition, we need to use an upper-tail hypothesis test. For a t-test, this means that we will reject the null hypothesis if the statistic is greater than the critical value for the test at the desired confidence. We will assume $\alpha = 0.05$.
 
-## Importing and summarizing the data
-```{r}
+## Summarizing the data
+```{r include=FALSE}
 #import Jan 2015 'clean' CitiBike data from csv file, include a header line
 fname <- '~/UCSL/R/ch2//Citi Bike Clean Data.csv'
 cbdata <- read.csv(fname, header = TRUE)
 ```
 
-```{r}
+```{r echo=FALSE}
 #Print the summary data and calculate the sample parameters n, s, xbar and xmed:
-#kable(head(summary(cbdata$tripduration)))
+kable(head(summary(cbdata$tripduration)))
 
 n <- dim(cbdata)[1]
 s <- sd(cbdata$tripduration)
@@ -39,7 +39,11 @@ xbar <- mean(cbdata$tripduration)
 xmed <- median(cbdata$tripduration)
 ```
 
-```{r}
+|*n*|*s*|mean|median|
+|:-:|:-:|:--:|:----:|
+|`r n`|`r s`|`r xbar`|`r xmed`|
+
+```{r echo=FALSE}
 #Fit a normal distribution to the data. Overlay a normal distribution curve onto the histogram of the data.
 par(mfrow = c(1,2))
 hist(cbdata$tripduration, breaks = c((1:60)*60,Inf), probability = TRUE, xlim=c(0,3600))
@@ -51,11 +55,11 @@ boxplot(cbdata$tripduration, ylim=c(0,3600))
 
 ##Determining an analysis method
 
-Before we even do any analysis, we note that the null hypothesis is heavily favored in this sampling, since 68.2% of values are less than 900. It would be remarkable for a sample of over 20,000 observations be so off-balance from a true median over 900. Nevertheless, we perform the calculations to support this.
+Before we even do any analysis, we note that the null hypothesis is heavily favored in this sampling, since 68.2% of values are less than 900. It would be remarkable for a sample of over 20,000 observations be so off-balance from a true median over 900. Nevertheless, we perform the calculations to support this.^[See https://github.com/cmprince/UCSL/blob/master/R/ch2/ch2.Rmd for this document's R code.]
 
-Because $n=$ `r n`, and the histogram is not wildly skewed (out-of-normal), CLT applies. But how do we the hypotheses using t-tests when they are on medians and not on means? CLT tells us that means of a sufficiently large number of samples from a population of any distribution will themselves distribute normally. Does this apply to medians as well? Intuitively, subsampled medians seem like they should distrubute normally in the same manner that the mean does. Let's run an experiment. First, the histogram suggests that this may follow something like a log-normal distribution. The histogram of the log of the `tripduration`s looks like so:
+Because $n=$ `r n`, and the histogram is not wildly skewed (out-of-normal), CLT applies. But how do we test the hypotheses using t-tests when they are on medians and not on means? CLT tells us that means of a sufficiently large number of samples from a population of any distribution will themselves distribute normally. Does this apply to medians as well? Intuitively, subsampled medians seem like they should distrubute normally in the same manner that the mean does. Let's run an experiment. First, the histogram suggests that this may follow something like a log-normal distribution. The histogram of the log of the `tripduration`s looks like so:
 
-```{r}
+```{r echo=FALSE}
 xbarlog<-mean(log(cbdata$tripduration))
 slog<- sd(log(cbdata$tripduration))
 xfitlog<-seq(xbarlog-4*slog,xbarlog+4*slog, length.out = 50)
@@ -76,7 +80,7 @@ for(i in 1:10000){
 
 Plotting the histogram of the medians and overlaying a normal fit:
 
-```{r}
+```{r echo=FALSE}
 hist(med, breaks=30, probability = TRUE)
 medmean<-mean(med)
 meds<-sd(med)
@@ -85,11 +89,9 @@ yfitmed<-dnorm(xfitmed, mean=medmean, sd=meds)
 lines(xfitmed, yfitmed, lwd=3, col='blue')
 ```
 
-Based on this analysis, the sample median distribution is normal, so we can be confident using a t-test for the median. Since the population variance is not known we will use the t-statistic instead of the z-statistic. We calualate the t-statistic and we will reject the null hypothesis if it is greater than the critical value. Instead of testing the location of the mean, we test on the location of the median:
+Based on this analysis, the sample median distribution is normal^[That is, for an underlying lognormal distribution for the sample observations. This is hardly a proof, but it is enough for us to make a convincing argument for or against the null hypothesis. Other works prove that the median, and indeed any non-extreme quantile, is normally distributed for any 'well-behaved' distribution where CLT applies.], so we can be confident using a t-test for the median. Since the population variance is not known we will use the t-statistic instead of the z-statistic. We calualate the t-statistic and we will reject the null hypothesis if it is greater than the critical value. Instead of testing the location of the mean, we test on the location of the median:
 
 \[t=\frac{\tilde{x} - \tilde{\mu}}{s/\sqrt{n}}\]
-
-The only remaining uncertainty is how to adjust the standard deviation *s*.^[The value for the variance of a sample median cited in various online sources is $$s^2 = \frac{1}{4nf(\tilde{\mu})^2}$$. ] But as we shall see below, any such correction would have to be enormous to have an impact on the outcome of the test.
 
 ```{r}
 med_h0 <- 900   #the hypothesized median
@@ -98,11 +100,9 @@ alpha <- 0.05 #significance level
 t1<-(xmed-med_h0)/(s/sqrt(n))
 t1
 qt(1-alpha,df=n-1)
-#Or, the p-value:
-pt(t1,df = n-1)
 ```
 
-Because the t-statistic is not greater than the critical value--by quite a large margin--we do not reject the null hypothesis.
+Because the t-statistic is not greater than the critical value--by quite a large margin--we do not reject the null hypothesis. The p-value is `1-pt(t1,df=n-1)` (subtraction from one needed because this is an upper tail test), which evaluates to `r 1-pt(t1,df=n-1)`.
 
 ##Using an alternative test
 
@@ -117,7 +117,7 @@ Here, we the p-value must be less than $\alpha$ to reject the null hypothesis. C
 
 Subset the overtime data:
 
-```{r}
+```{r echo=FALSE}
 cbd_ot<-subset(cbdata, tripduration>2700)
 med_ot<-median(cbd_ot$tripduration)
 ```
@@ -126,7 +126,6 @@ $$ H_0: \tilde{\mu}_{OT} = 7200 $$
 $$ H_a: \tilde{\mu}_{OT} \neq 7200 $$
 
 Since the null hypothesis tests for an equality, we need a two-tailed t-test. We reject the hypothesis if the t-statistic is larger than the critical value (or is less than the negative critical value). Using the same value for $\alpha$, we have:
-
 
 ```{r}
 med_ot_h0 <- 7200
@@ -139,11 +138,11 @@ t2
 qt(1-alpha/2,df=n_ot-1)
 ```
 
-Since the t-statistic is less than the negative critical value, we reject the null hypothesis that the median for overtime is 2 hours.
+Since the t-statistic is less than the negative critical value, we reject the null hypothesis that the median for overtime is 2 hours. The p-value is `r round(pt(t2,df=n_ot-1),1)`.
 
 # *Citi Bike management thinks that men incur in more overtime fees.  Test this hypothesis by comparing overtime variances across genders.*
 
-```{r}
+```{r echo=FALSE}
 boxplot(tripduration ~ gender, data=cbd_ot, ylim=c(2500,6000))
 ```
 
