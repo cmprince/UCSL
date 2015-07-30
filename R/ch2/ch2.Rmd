@@ -55,7 +55,7 @@ boxplot(cbdata$tripduration, ylim=c(0,3600))
 
 ##Determining an analysis method
 
-Before we even do any analysis, we note that the null hypothesis is heavily favored in this sampling, since 68.2% of values are less than 900. It would be remarkable for a sample of over 20,000 observations be so off-balance from a true median over 900. Nevertheless, we perform the calculations to support this.^[See https://github.com/cmprince/UCSL/blob/master/R/ch2/ch2.Rmd for this document's R code.]
+Before we even do any analysis, we note that the null hypothesis is heavily favored in this sampling, since 68.2% of values are less than 900. It would be remarkable for a sample of over 20,000 observations to be so off-balance from a true median over 900. Nevertheless, we perform the calculations to support this.^[See https://github.com/cmprince/UCSL/blob/master/R/ch2/ch2.Rmd for this document's R code.]
 
 Because $n=$ `r n`, and the histogram is not wildly skewed (out-of-normal), CLT applies. But how do we test the hypotheses using t-tests when they are on medians and not on means? CLT tells us that means of a sufficiently large number of samples from a population of any distribution will themselves distribute normally. Does this apply to medians as well? Intuitively, subsampled medians seem like they should distrubute normally in the same manner that the mean does. Let's run an experiment. First, the histogram suggests that this may follow something like a log-normal distribution. The histogram of the log of the `tripduration`s looks like so:
 
