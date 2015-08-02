@@ -1,6 +1,7 @@
-#fname <- '~/UCSL/R/ch2/2014-07 - Citi Bike trip data.csv'
-fname <- '~/UCSL/R/ch2/Citi Bike Clean Data.csv'   #smaller set for testing
+fname <- '~/UCSL/R/ch2/2014-07 - Citi Bike trip data.csv'
+#fname <- '~/UCSL/R/ch2/Citi Bike Clean Data.csv'   #smaller set for testing
 cbd<-read.csv(fname,header=TRUE)
+cbd<-data.frame(cbd, byear = as.numeric(as.character(cbd$birth.year))) #probably a better way to do this...
 
 #get tripduration parameters for z-score calcluation
 tdur.mean <- mean(cbd$tripduration)
@@ -15,26 +16,26 @@ cbd <- cbind(cbd, dist, z_sc)
 ##no outlier removal
 #Data summaries
 summary(cbd$tripduration)
-summary(cbd$birth.year)
+summary(cbd$byear)
 summary(cbd$dist)
 
 #Histograms
 par(mfrow = c(3,1))
 hist(cbd$tripduration)
-hist(cbd$birth.year)
+hist(cbd$byear)
 hist(cbd$dist)
 
 #Boxplots
 par(mfrow = c(1,3))
 boxplot(cbd$tripduration)
-boxplot(cbd$birth.year)
+boxplot(cbd$byear)
 boxplot(cbd$dist)
 
 #xy-plots
 par(mfrow = c(1,1))
-plot(cbd$birth.year, cbd$tripduration)
-symbols(cbd$birth.year, cbd$tripduration, circles=array(0,dim(cbd)[1]), xlim=c(1920,2000))
-symbols(cbd$birth.year, cbd$tripduration, circles=array(0,dim(cbd)[1]), xlim=c(1920,2000), ylim=c(60,2000))
+plot(cbd$byear, cbd$tripduration)
+symbols(cbd$byear, cbd$tripduration, circles=array(0,dim(cbd)[1]), xlim=c(1920,2000))
+symbols(cbd$byear, cbd$tripduration, circles=array(0,dim(cbd)[1]), xlim=c(1920,2000), ylim=c(60,2000))
 
 #intensity plots
 makeIntHistBins <- function(x, y, xrng = c(min(x):max(x)), ybrks = 30) {
@@ -42,7 +43,7 @@ makeIntHistBins <- function(x, y, xrng = c(min(x):max(x)), ybrks = 30) {
   count=0
   for (i in c(min(x):max(x))){
     count<- count + 1
-    s<-subset(cbd, birth.year==i)
+    s<-subset(cbd, byear==i)
     t<-hist(s$tripduration, breaks=ybrks, plot=FALSE)
     td[count,]=t$counts
   }
@@ -54,7 +55,7 @@ td1<-array(0,c(81,74))
 count=0
 for (i in c(1920:2000)){
   count<- count + 1
-  s<-subset(cbd, birth.year==i)
+  s<-subset(cbd, byear==i)
   t<-hist(s$tripduration, breaks=60*c(1:60,15*c(5:12),60*c(4:10)), plot=FALSE)
   td1[count,]=t$counts
 }
@@ -67,7 +68,7 @@ td2<-array(0,c(81,40))
 count=0
 for (i in c(1920:2000)){
   count<- count + 1
-  s<-subset(cbd, birth.year==i)
+  s<-subset(cbd, byear==i)
   t<-hist(s$dist, breaks=250*c(0:40), plot=FALSE)
   td2[count,]=t$counts
 }
@@ -125,7 +126,7 @@ myRegPlot2 <- function(myregr, mat, xlim=c(min(myregr$x, na.rm=TRUE),max(myregr$
 
 ##Models
 #Start with tripduration as a function of birth year:
-modelBYxTDUR<-myregression(x = cbd$birth.year, y = cbd$tripduration)
+modelBYxTDUR<-myregression(x = cbd$byear, y = cbd$tripduration)
 myRegPlots(myregr = modelBYxTDUR,ylim = c(0,2000))
 
 image(c(1920:2000), 60*c(1:60,15*c(5:12),60*c(4:10)), td1, xlim=c(1920,2000), ylim=c(60,2000), col=rainbow(30))
@@ -133,15 +134,15 @@ lines(c(1920:2000),modelBYxTDUR$b0+modelBYxTDUR$b1*c(1920:2000), lwd=3)
 points(modelBYxTDUR$xmean,modelBYxTDUR$ymean,col="black", lwd = 3, bg="white", pch=21)
 
 #Verify using R's lm() method
-summary(lm(cbd$tripduration~cbd$birth.year))
+summary(lm(cbd$tripduration~cbd$byear))
 
 #Repeat calculations with our distance metric as a function of birth year:
-modelBYxDIST<-myregression(x = cbd$birth.year, y = cbd$dist)
+modelBYxDIST<-myregression(x = cbd$byear, y = cbd$dist)
 myRegPlots(myregr= modelBYxDIST)
 image(c(1920:2000), 250*c(1:40), td2, xlim=c(1920,2000), ylim=c(60,6000), col=rainbow(30))
 lines(c(1920:2000),modelBYxDIST$b0+modelBYxDIST$b1*c(1920:2000), lwd=3)  
 points(modelBYxDIST$xmean,modelBYxDIST$ymean,col="black", lwd = 3, bg="white", pch=21)
-summary(lm(cbd$dist~cbd$birth.year))
+summary(lm(cbd$dist~cbd$byear))
 
 #Subset data to remove outliers (z_sc<2)
 cbd.z2<-subset(cbd, z_sc<2)
@@ -149,26 +150,26 @@ cbd.z2<-subset(cbd, z_sc<2)
 ##Outlier removal
 #Data summaries
 summary(cbd.z2$tripduration)
-summary(cbd.z2$birth.year)
+summary(cbd.z2$byear)
 summary(cbd.z2$dist)
 
 #Histograms
 par(mfrow = c(3,1))
 hist(cbd.z2$tripduration)
-hist(cbd.z2$birth.year)
+hist(cbd.z2$byear)
 hist(cbd.z2$dist)
 
 #Boxplots
 par(mfrow = c(1,3))
 boxplot(cbd.z2$tripduration)
-boxplot(cbd.z2$birth.year)
+boxplot(cbd.z2$byear)
 boxplot(cbd.z2$dist)
 
 #xy-plots
 par(mfrow = c(1,1))
-plot(cbd.z2$birth.year, cbd.z2$tripduration)
-symbols(cbd.z2$birth.year, cbd.z2$tripduration, circles=array(0,dim(cbd.z2)[1]), xlim=c(1920,2000))
-symbols(cbd.z2$birth.year, cbd.z2$tripduration, circles=array(0,dim(cbd.z2)[1]), xlim=c(1920,2000), ylim=c(60,2000))
+plot(cbd.z2$byear, cbd.z2$tripduration)
+symbols(cbd.z2$byear, cbd.z2$tripduration, circles=array(0,dim(cbd.z2)[1]), xlim=c(1920,2000))
+symbols(cbd.z2$byear, cbd.z2$tripduration, circles=array(0,dim(cbd.z2)[1]), xlim=c(1920,2000), ylim=c(60,2000))
 
 #intensity plots
 td3<-array(0,c(81,74))
@@ -176,7 +177,7 @@ td3<-array(0,c(81,74))
 count=0
 for (i in c(1920:2000)){
   count<- count + 1
-  s<-subset(cbd.z2, birth.year==i)
+  s<-subset(cbd.z2, byear==i)
   t<-hist(s$tripduration, breaks=60*c(1:60,15*c(5:12),60*c(4:10)), plot=FALSE)
   td3[count,]=t$counts
 }
@@ -189,7 +190,7 @@ td4<-array(0,c(81,40))
 count=0
 for (i in c(1920:2000)){
   count<- count + 1
-  s<-subset(cbd.z2, birth.year==i)
+  s<-subset(cbd.z2, byear==i)
   t<-hist(s$dist, breaks=250*c(0:40), plot=FALSE)
   td4[count,]=t$counts
 }
@@ -199,17 +200,36 @@ image(c(1920:2000), 250*c(1:40), td4, xlim=c(1920,2000), ylim=c(60,6000), col=ra
 
 ##Models
 #Start with tripduration as a function of birth year:
-modelBYxTDUR2<-myregression(cbd.z2$birth.year, cbd.z2$tripduration)
+modelBYxTDUR2<-myregression(cbd.z2$byear, cbd.z2$tripduration)
 myRegPlots(modelBYxTDUR2)
 image(c(1920:2000), 60*c(1:60,15*c(5:12),60*c(4:10)), td3, xlim=c(1920,2000), ylim=c(60,2000), col=rainbow(30))
 lines(c(1920:2000),modelBYxTDUR2$b0+modelBYxTDUR2$b1*c(1920:2000), lwd=3)  
 points(modelBYxTDUR2$xmean,modelBYxTDUR2$ymean,col="black", lwd = 3, bg="white", pch=21)
-summary(lm(cbd.z2$tripduration~cbd.z2$birth.year))
+summary(lm(cbd.z2$tripduration~cbd.z2$byear))
 
 #Repeat calculations with our distance metric as a function of birth year:
-modelBYxDIST2<-myregression(cbd.z2$birth.year, cbd.z2$dist)
+modelBYxDIST2<-myregression(cbd.z2$byear, cbd.z2$dist)
 myRegPlots(modelBYxDIST2)
 image(c(1920:2000), 250*c(1:40), td4, xlim=c(1920,2000), ylim=c(60,6000), col=rainbow(30))
 lines(c(1920:2000),modelBYxDIST2$b0+modelBYxDIST2$b1*c(1920:2000), lwd=3)  
 points(modelBYxDIST2$xmean,modelBYxDIST2$ymean,col="black", lwd = 3, bg="white", pch=21)
-summary(lm(cbd.z2$dist~cbd.z2$birth.year))
+summary(lm(cbd.z2$dist~cbd.z2$byear))
+
+#Repeat calculations with our distance metric as a function of birth year:
+modelTDURxDIST2<-myregression(cbd.z2$tripduration, cbd.z2$dist)
+myRegPlots(modelTDURxDIST2)
+
+td5<-array(0,c(40,74))
+
+count=0
+for (i in 250*c(1:40)){
+  count<- count + 1
+  s<-subset(cbd.z2, abs(dist-i)<=250)
+  t<-hist(s$tripduration, breaks=60*c(1:60,15*c(5:12),60*c(4:10)), plot=FALSE)
+  td5[count,]=t$counts
+}
+image(60*c(1:60,15*c(5:12),60*c(4:10)), 250*c(1:40), t(td5), xlim=c(0,2500), ylim=c(0,10000), col=rainbow(30))
+lines(50*c(0:50),modelTDURxDIST2$b0+modelTDURxDIST2$b1*50*c(0:50), lwd=3)  
+points(modelTDURxDIST2$xmean,modelTDURxDIST2$ymean,col="black", lwd = 3, bg="white", pch=21)
+
+summary(lm(cbd.z2$tripduration~cbd.z2$dist))
