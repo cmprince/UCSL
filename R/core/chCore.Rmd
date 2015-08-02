@@ -1,0 +1,255 @@
+---
+title: "UCSL R Core Challenge"
+author: "Christopher Prince (cmp670@nyu.edu)"
+date: "08/02/2015"
+output: 
+  pdf_document:
+    number_sections: true
+---
+
+```{r}
+fname <- '~/UCSL/R/ch2/2014-07 - Citi Bike trip data.csv'
+#fname <- '~/UCSL/R/ch2/Citi Bike Clean Data.csv'   #smaller set for testing
+cbd<-read.csv(fname,header=TRUE)
+cbd<-data.frame(cbd, byear = as.numeric(as.character(cbd$birth.year))) #probably a better way to do this...
+```
+
+#Setup
+In addition to calculating the z-score as in previous challenges, we also establish a naive distance metric (great circle distance between start and end, not distance travelled).
+```{r include=FALSE}
+#get tripduration parameters for z-score calcluation
+tdur.mean <- mean(cbd$tripduration)
+tdur.sd <- sd(cbd$tripduration)
+#Create a z-score based on tripduration
+z_sc <- (cbd$tripduration-tdur.mean)/tdur.sd
+```
+
+```{r}
+distance <- function(slat, slon, elat, elon){
+  return acos(sin(slat*pi/180)*sin(elat*pi/180)+cos(slat*pi/180)*cos(elat*pi/180)*cos((slon-elon)*pi/180))*637100
+}
+dist <- distance(cbd$start.station.latitude, cbd$start.station.longitude, cbd$end.station.latitude, cbd$end.station.longitude)
+```
+```{r include=FALSE}
+#append these to our data frame
+cbd <- cbind(cbd, dist, z_sc)
+```
+
+#Descriptive statistics
+##Summaries
+```{r}
+##no outlier removal
+#Data summaries
+summary(cbd$tripduration)
+summary(cbd$byear)
+summary(cbd$dist)
+```
+
+##Histograms
+```{r}
+par(mfrow = c(3,1))
+hist(cbd$tripduration)
+hist(cbd$byear)
+hist(cbd$dist)
+```
+
+##Boxplots
+```{r}
+par(mfrow = c(1,3))
+boxplot(cbd$tripduration)
+boxplot(cbd$byear)
+boxplot(cbd$dist)
+```
+
+##Scatter plots
+These take a long time to render, so we note in passing that a simple call to `plot` the variables results in a sparse graph that is difficult to read. We include here only a version with axes cutoff to a region of interest and using very small symbols.
+```{r}
+par(mfrow = c(1,1))
+#plot(cbd$byear, cbd$tripduration)
+symbols(cbd$byear, cbd$tripduration, circles=array(0,dim(cbd)[1]), xlim=c(1920,2000), ylim=c(60,2000))
+```
+
+##Intensity plots
+Even after optimizing the scatter plot above, it is difficult to see how the density of these plots vary with nearly one million data points, so we construct intensity plots by creating histograms across `byear`.
+
+```{r}
+td1<-array(0,c(81,74))
+
+count=0
+for (i in c(1920:2000)){
+  count<- count + 1
+  s<-subset(cbd, byear==i)
+  t<-hist(s$tripduration, breaks=60*c(1:60,15*c(5:12),60*c(4:10)), plot=FALSE)
+  td1[count,]=t$counts
+}
+
+image(c(1920:2000), 60*c(1:60,15*c(5:12),60*c(4:10)), td1, xlim=c(1920,2000), ylim=c(60,2000), col=rainbow(30), xlab='Birth year', ylab='Trip duration')
+title(main = 'Relative intensity of rides taken by trip duration and birth year')
+
+td2<-array(0,c(81,40))
+
+count=0
+for (i in c(1920:2000)){
+  count<- count + 1
+  s<-subset(cbd, byear==i)
+  t<-hist(s$dist, breaks=250*c(0:40), plot=FALSE)
+  td2[count,]=t$counts
+}
+
+image(c(1920:2000), 250*c(1:40), td2, xlim=c(1920,2000), ylim=c(0,6000), col=rainbow(30), xlab= 'Birth year', ylab='Distance')
+title(main = 'Relative intensity of rides taken by distance and birth year')
+```
+
+#Regression analysis
+##Function setup
+```{r}
+#Create a regression function to reuse in this document
+myregression <- function(x, y){
+  x.mean <- mean(x, na.rm = TRUE)
+  y.mean <- mean(y, na.rm = TRUE)
+  
+  #Data frame to calculate regression manually
+  data <- data.frame(x, y, xdev=(x-x.mean), ydev=(y-y.mean), xdevydev=((x-x.mean)*(y-y.mean)), xdev2=(x-x.mean)^2,ydev2=(y-y.mean)^2)
+  
+  #OLS terms
+  SP <- sum(data$xdevydev, na.rm=TRUE)
+  SSx <- sum(data$xdev2, na.rm=TRUE)
+  SSy <- sum(data$ydev2, na.rm=TRUE)
+  SSxy <- sum(data$xdevydev, na.rm=TRUE)
+  b1 <- SP / SSx
+  b0 <- y.mean-b1*x.mean
+  
+  #Manual calculation of R-squared
+  r2 <- SSxy^2/(SSx*SSy)
+  
+  #get the set names
+  xname <- deparse(substitute(x))
+  yname <- deparse(substitute(y))
+  
+  #return the results
+  results <- list(b0=b0,b1=b1,r2=r2,xmean=x.mean,ymean=y.mean,xname=xname, yname=yname, x=x,y=y) #, model=model1)
+  
+  return(results)
+}
+
+#plot the regression on an xy plot
+myRegPlots <- function(myregr, xlim=c(min(myregr$x, na.rm=TRUE),max(myregr$x, na.rm=TRUE)), ylim=c(min(myregr$y, na.rm=TRUE),max(myregr$y, na.rm=TRUE))){
+  plot(myregr$x,myregr$y,col="red", lwd = 1, xlim=xlim, ylim=ylim, xlab=myregr$xname, ylab=myregr$yname, xaxs='i')
+  points(myregr$xmean,myregr$ymean,col="green", lwd = 10)
+  lines(xlim,myregr$b0+myregr$b1*xlim, lwd=4)  
+}
+```
+
+##Models
+###Tripduration as a function of birth year:
+```{r}
+modelBYxTDUR<-myregression(x = cbd$byear, y = cbd$tripduration)
+myRegPlots(myregr = modelBYxTDUR,ylim = c(0,2000))
+
+image(c(1920:2000), 60*c(1:60,15*c(5:12),60*c(4:10)), td1, xlim=c(1920,2000), ylim=c(60,2000), col=rainbow(30))
+lines(c(1920:2000),modelBYxTDUR$b0+modelBYxTDUR$b1*c(1920:2000), lwd=3)  
+points(modelBYxTDUR$xmean,modelBYxTDUR$ymean,col="black", lwd = 3, bg="white", pch=21)
+
+#Verify using R's lm() method
+summary(lm(cbd$tripduration~cbd$byear))
+```
+
+###Distance as a function of birth year:
+```{r}
+modelBYxDIST<-myregression(x = cbd$byear, y = cbd$dist)
+myRegPlots(myregr= modelBYxDIST)
+image(c(1920:2000), 250*c(1:40), td2, xlim=c(1920,2000), ylim=c(60,6000), col=rainbow(30))
+lines(c(1920:2000),modelBYxDIST$b0+modelBYxDIST$b1*c(1920:2000), lwd=3)  
+points(modelBYxDIST$xmean,modelBYxDIST$ymean,col="black", lwd = 3, bg="white", pch=21)
+summary(lm(cbd$dist~cbd$byear))
+
+#Subset data to remove outliers (z_sc<2)
+cbd.z2<-subset(cbd, z_sc<2)
+
+##Outlier removal
+#Data summaries
+summary(cbd.z2$tripduration)
+summary(cbd.z2$byear)
+summary(cbd.z2$dist)
+
+#Histograms
+par(mfrow = c(3,1))
+hist(cbd.z2$tripduration)
+hist(cbd.z2$byear)
+hist(cbd.z2$dist)
+
+#Boxplots
+par(mfrow = c(1,3))
+boxplot(cbd.z2$tripduration)
+boxplot(cbd.z2$byear)
+boxplot(cbd.z2$dist)
+
+#xy-plots
+par(mfrow = c(1,1))
+plot(cbd.z2$byear, cbd.z2$tripduration)
+symbols(cbd.z2$byear, cbd.z2$tripduration, circles=array(0,dim(cbd.z2)[1]), xlim=c(1920,2000))
+symbols(cbd.z2$byear, cbd.z2$tripduration, circles=array(0,dim(cbd.z2)[1]), xlim=c(1920,2000), ylim=c(60,2000))
+
+#intensity plots
+td3<-array(0,c(81,74))
+
+count=0
+for (i in c(1920:2000)){
+  count<- count + 1
+  s<-subset(cbd.z2, byear==i)
+  t<-hist(s$tripduration, breaks=60*c(1:60,15*c(5:12),60*c(4:10)), plot=FALSE)
+  td3[count,]=t$counts
+}
+
+image(c(1920:2000), 60*c(1:60,15*c(5:12),60*c(4:10)), td3, xlim=c(1920,2000), ylim=c(60,2000), col=rainbow(30))
+#image(c(1920:2000), 60*c(1:60,15*c(5:12),60*c(4:10)), td3, xlim=c(1920,2000), ylim=c(60,2000), col=c(gray(100:0/100)))
+
+td4<-array(0,c(81,40))
+
+count=0
+for (i in c(1920:2000)){
+  count<- count + 1
+  s<-subset(cbd.z2, byear==i)
+  t<-hist(s$dist, breaks=250*c(0:40), plot=FALSE)
+  td4[count,]=t$counts
+}
+
+image(c(1920:2000), 250*c(1:40), td4, xlim=c(1920,2000), ylim=c(60,6000), col=rainbow(30))
+#image(c(1920:2000), 250*c(1:40), td4, xlim=c(1920,2000), ylim=c(60,6000), col=c(gray(100:0/100)))
+
+##Models
+#Start with tripduration as a function of birth year:
+modelBYxTDUR2<-myregression(cbd.z2$byear, cbd.z2$tripduration)
+myRegPlots(modelBYxTDUR2)
+image(c(1920:2000), 60*c(1:60,15*c(5:12),60*c(4:10)), td3, xlim=c(1920,2000), ylim=c(60,2000), col=rainbow(30))
+lines(c(1920:2000),modelBYxTDUR2$b0+modelBYxTDUR2$b1*c(1920:2000), lwd=3)  
+points(modelBYxTDUR2$xmean,modelBYxTDUR2$ymean,col="black", lwd = 3, bg="white", pch=21)
+summary(lm(cbd.z2$tripduration~cbd.z2$byear))
+
+#Repeat calculations with our distance metric as a function of birth year:
+modelBYxDIST2<-myregression(cbd.z2$byear, cbd.z2$dist)
+myRegPlots(modelBYxDIST2)
+image(c(1920:2000), 250*c(1:40), td4, xlim=c(1920,2000), ylim=c(60,6000), col=rainbow(30))
+lines(c(1920:2000),modelBYxDIST2$b0+modelBYxDIST2$b1*c(1920:2000), lwd=3)  
+points(modelBYxDIST2$xmean,modelBYxDIST2$ymean,col="black", lwd = 3, bg="white", pch=21)
+summary(lm(cbd.z2$dist~cbd.z2$byear))
+
+#Repeat calculations with our distance metric as a function of birth year:
+modelTDURxDIST2<-myregression(cbd.z2$tripduration, cbd.z2$dist)
+myRegPlots(modelTDURxDIST2)
+
+td5<-array(0,c(40,74))
+
+count=0
+for (i in 250*c(1:40)){
+  count<- count + 1
+  s<-subset(cbd.z2, abs(dist-i)<=250)
+  t<-hist(s$tripduration, breaks=60*c(1:60,15*c(5:12),60*c(4:10)), plot=FALSE)
+  td5[count,]=t$counts
+}
+image(60*c(1:60,15*c(5:12),60*c(4:10)), 250*c(1:40), t(td5), xlim=c(0,2500), ylim=c(0,10000), col=rainbow(30))
+lines(50*c(0:50),modelTDURxDIST2$b0+modelTDURxDIST2$b1*50*c(0:50), lwd=3)  
+points(modelTDURxDIST2$xmean,modelTDURxDIST2$ymean,col="black", lwd = 3, bg="white", pch=21)
+
+summary(lm(cbd.z2$tripduration~cbd.z2$dist))
+```
