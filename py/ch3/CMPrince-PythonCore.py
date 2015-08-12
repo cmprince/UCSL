@@ -49,7 +49,7 @@ def getCBData(fname, cols=[], dtypes = [np.object0]):
 #fname = '../ch2/dec-2week-2014.csv'
 fname = '../../R/ch2/Citi Bike Clean Data.csv'              #file with fewer data points for testing
 cols = ['gender','usertype','tripduration','starttime']
-dtypes = [np.int8, np.str_, np.int16, dt.datetime] #'datetime64[s]']
+dtypes = [np.int8, (np.str_,10), np.int16, dt.datetime] #'datetime64[s]']
 
 cbdata = getCBData(fname, cols, dtypes)
 
@@ -79,9 +79,13 @@ for i in range(len(cbdata)):
 print cbdata['usertype']
 print numMale, numFemale, numUnknown, numCust, numSubsc
 
-pctMale = float(numMale)/numTotal
-pctFemale = float(numFemale)/numTotal
+totalMale = numMale.sum()
+totalFemale = numFemale.sum()
+totalUnknown = numUnknown.sum()
+numTotal = totalMale + totalFemale + totalUnknown
 
+pctMale = totalMale/numTotal
+pctFemale = totalFemale/numTotal
 
 histhour=np.histogram(hours, range(24)) #, range, normed, weights, density)
 print histhour
