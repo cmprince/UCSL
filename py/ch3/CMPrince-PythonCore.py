@@ -10,41 +10,7 @@ import datetime as dt       #for string to time formatting
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import pyplot as pl
-
-def getCBData(fname, cols=[], dtypes = [np.object0]):
-    #Returns a numpy.array containing numpy.dtype formatted data for the fields in list cols from file fname.
-    #TODO: figure out what to do when cols, dtypes not provided
-    
-    #Load csv into list 
-    row=[]
-    try:
-        with open(fname, 'rU') as f:
-            rd = csv.DictReader(f)
-            for i in rd:
-                row.append(i)
-    except IOError as e:
-        print('Could not open the file ' + fname + '!')
-        
-    dim2 = len(row)
-    
-    for (c,d) in zip(cols, dtypes):
-        if d == dt.datetime:
-            for i in range(dim2):
-                row[i][c] = dt.datetime.strptime(row[i][c], '%m/%d/%y %H:%M')  # naive datetime instance
-
-    #initialize the return array with zeros using the types defined in dtypes
-    typearray = zip(cols, dtypes)
-    data=np.zeros(dim2, typearray)
-
-    #Load the necessary columns into data numpy.array
-    try:
-        for c in cols:
-            data[c]=np.array([row[i][c] for i in range(len(row))])
-    except KeyError:
-        print('No ' + c + ' key in the .csv file!')
-        raise
-    
-    return data
+import pandas as pd
 
 def myLabeledColorBar(axes, bounds, textlabs=[''], colorlist=['gray'], drawedges = True, orientation = 'horizontal'):
     cmap = mpl.colors.ListedColormap(colorlist)
@@ -67,8 +33,8 @@ def myLabeledColorBar(axes, bounds, textlabs=[''], colorlist=['gray'], drawedges
             cb.ax.text(((bounds[j+1]-bounds[j])/2 + bounds[j])/bounds[-1],
                        .5,
                        textlabs[j % len(textlabs)] + '\n' + '{0:g}'.format((bounds[j+1]-bounds[j])),
-                       ha='center', va='center',
-                       bbox=dict(facecolor='white', ec='none', alpha=0.65))
+                       ha='center', va='center')
+                       #bbox=dict(facecolor='white', ec='none', alpha=0.65))
 
     else:
         cb.ax.get_yaxis().set_ticks([])
@@ -76,19 +42,37 @@ def myLabeledColorBar(axes, bounds, textlabs=[''], colorlist=['gray'], drawedges
             cb.ax.text(.5,
                        ((bounds[j+1]-bounds[j])/2 + bounds[j])/bounds[-1],
                        textlabs[j % len(textlabs)] + '\n' + '{0:g}'.format((bounds[j+1]-bounds[j])),
-                       ha='center', va='center',
-                       bbox=dict(facecolor='white', ec='none', alpha=0.65))
+                       ha='center', va='center')
+                       #bbox=dict(facecolor='white', ec='none', alpha=0.65))
     
     return cb
 
-########
-#Define fname, columns and dtypes for the problem and call our function
-#fname = '../ch2/dec-2week-2014.csv'
-fname = '../../R/ch2/Citi Bike Clean Data.csv'              #file with fewer data points for testing
-cols = ['gender','usertype','tripduration','starttime']
-dtypes = [np.int8, (np.str_,10), np.int16, dt.datetime] #'datetime64[s]']
+def addCBar(im, ax, ticks=5, side='top', size='5%', pad=0.03):
+    divider = make_axes_locatable(ax)
+    caxnew=divider.append_axes(side, size=size, pad=pad)
+    
+    #Determine colorbar orienation from the side argument
+    orientation='horizontal'
+    if (side=='left' or side=='right'): orientation='vertical'
+    
+    #Create the colorbar and set tick locations from the side argument
+    cbar=figh.colorbar(im, cax=caxnew, orientation = orientation)
+    cbar.ax.tick_params(labeltop=(side=='top'), labelbottom=(side=='bottom'),
+                        top=(side=='top'), bottom=(side=='bottom'),
+                        labelleft=(side=='left'), labelright=(side=='right'),
+                        left=(side=='left'), right=(side=='right'),
+                        labelsize='small')
 
-cbdata = getCBData(fname, cols, dtypes)
+    #Autogenerate good looking ticks for the colorbar
+    tick_locator = mpl.ticker.MaxNLocator(nbins=ticks)
+    cbar.locator = tick_locator
+    cbar.update_ticks()
+    return cbar
+
+########
+#Read file into a pandas data frame
+fname = '../../R/ch2/2014-07 - Citi Bike trip data.csv'
+cbdata=pd.read_csv(fname, parse_dates=['starttime'],nrows=10000)
 
 #Sum for each gender type, get the total, and calculate percentages
 hours = np.zeros(len(cbdata))
@@ -134,81 +118,111 @@ numTotal = totalMale + totalFemale + totalUnknown
 pctMale = totalMale/numTotal
 pctFemale = totalFemale/numTotal
 
-figh = pl.figure()
+#Setup figure subplot grid:
+#=============
+#|11111111111|
+#|-+---+---+-|
+#|6|222|444|7|
+#|6+---+---+7|
+#|6|333|555|7|
+#=============
+
+figh = pl.figure(figsize=(8,10))
 ax1 = pl.subplot2grid((3,6), (0,0), colspan=6)
 ax2 = pl.subplot2grid((3,6), (1,1), colspan=2)
 ax3 = pl.subplot2grid((3,6), (2,1), colspan=2, sharex=ax2, sharey=ax2)
-ax4 = pl.subplot2grid((3,6), (1,0), rowspan=2)
-ax5 = pl.subplot2grid((3,6), (1,5), rowspan=2)
-ax6 = pl.subplot2grid((3,6), (1,3), colspan=2, sharex=ax2, sharey=ax2)
-ax7 = pl.subplot2grid((3,6), (2,3), colspan=2, sharex=ax2, sharey=ax2)
+ax4 = pl.subplot2grid((3,6), (1,3), colspan=2, sharex=ax2, sharey=ax2)
+ax5 = pl.subplot2grid((3,6), (2,3), colspan=2, sharex=ax2, sharey=ax2)
+ax6 = pl.subplot2grid((3,6), (1,0), rowspan=2)
+ax7 = pl.subplot2grid((3,6), (1,5), rowspan=2)
+figh.subplots_adjust(top=0.95,bottom=0.05,left=0.1,right=0.95)
 
 pl.sca(ax1)
-ax1.hist(hours, 24, range=(0,24), align='left', color='gray', label='Total rides')
-l1, = pl.plot(numMale, label='Male', color='b', linewidth=3)
-l2, = pl.plot(numFemale, label='Female', color='r', linewidth=3)
-l3, = pl.plot(numUnknown, label='Unknown', color='g', linewidth=3)
-l4, = pl.plot(numCust, label='Customers', color='yellow', linewidth=3)
-l5, = pl.plot(numSubsc, label='Subscribers', color='pink', linewidth=3)
-ax1.legend(loc='upper left', ncol=2)
+bincolors=['lightgray']*4 + ['khaki']*4
+c,b,patches=ax1.hist(hours, 24,
+                     range=(0,24), align='left',
+                     color='gray', label='Total rides')
+#Color bins using bincolors ('%' permits recycling of the list)
+for i,patch in enumerate(patches):
+    patch.set_facecolor(bincolors[i % len(bincolors)])  
+    patch.set_edgecolor('gray')
+#Add lines to the plot for each studied group
+l1, = pl.plot(numMale, label='Male', color='deepskyblue', linewidth=3)
+l2, = pl.plot(numFemale, label='Female', color='tomato', linewidth=3)
+l3, = pl.plot(numUnknown, label='Unknown', color='limegreen', linewidth=3)
+l4, = pl.plot(numCust, label='Customers', color='pink', linewidth=3)
+l5, = pl.plot(numSubsc, label='Subscribers', color='orange', linewidth=3)
+#Add a legend
+ax1.legend(loc='upper left', ncol=1, fontsize='small')
+#align='left' in the hist call aligns bins to the centers of the ticks,
+#so adjust the range to extend a little beyond -0.5 and +23.5
 ax1.set_xlim(left=-1,right=24)
-ax1.set_xticks([0,6,12,18,23])
+ax1.set_xticks([0,4,8,12,16,20,23])
 pl.title('Total rides in period by hour, per gender and usertype')
-pl.xlabel('hour of the day', labelpad=0.05)
-curpos=ax1.get_position()
-ax1.set_position([.125,.725,.775,.225]) #[curpos.bounds[0], 0.8, curpos.bounds[2], curpos.bounds[3]])
+pl.xlabel('hour of the day', labelpad=0.1)
+#manually bump the axis up the figure a bit to avoid label interference
+ax1.set_position([.1,.725,.85,.225])
 
+#Create four 2-d histograms binning by hour and day
+#Male riders:
 pl.sca(ax2)
 c2,x,y,mh2 = ax2.hist2d(menhours, mendays, [range(0,25),range(1,33)])
 ax2.set_xlim(right=24)
-pl.setp( ax2.get_yticklabels(), visible=False)
-pl.xlabel('hour of the day', labelpad=0.03)
-divider2 = make_axes_locatable(ax2)
-cax2=divider2.append_axes("top", size='5%', pad=0.03)
-cbar1=figh.colorbar(mh2, cax=cax2, orientation = 'horizontal')
-cbar1.ax.tick_params(labeltop='on', labelbottom='off', top='on', bottom='off')
-ax2.text(0,0.5,'male riders', color='white', rotation='vertical', verticalalignment='bottom')
-ax2.set_xticks([0,6,12,18,23])
+#Add appropriate axis labels where needed
+pl.xlabel('hour', labelpad=0.1)
+pl.ylabel('day of the month', labelpad=0)
+#Add a customized color bar (see function addCBar above)
+cbar2=addCBar(mh2,ax2)
+ax2.tick_params(left=False, labelleft=False, labelsize='small', pad=0)
+#Label the plot
+ax2.text(0,1,'men',
+         color='white', horizontalalignment='left', verticalalignment='top',
+         transform=ax2.transAxes)
+#Since all hist2d calls share axes, only need to do this once
+ax2.set_xticks([0,4,8,12,16,20,23])
 ax2.set_yticks([7,14,21,28])
- 
+
+#Female riders: 
 pl.sca(ax3)
 c,x,y,wh2 = ax3.hist2d(womenhours, womendays, [range(0,25),range(1,33)])
-pl.setp( ax3.get_xticklabels(), visible=False)
-pl.setp( ax3.get_yticklabels(), visible=False)
-divider3 = make_axes_locatable(ax3)
-cax3=divider3.append_axes("bottom", size='5%', pad=0.03)
-cbar2=figh.colorbar(wh2, cax=cax3, orientation = 'horizontal')
-ax3.text(0,0.5,'female riders', color='white', rotation='vertical', verticalalignment='bottom')
+pl.ylabel('day of the month', labelpad=0)
+cbar3=addCBar(wh2,ax3, side='bottom')
+ax3.tick_params(top=True, labeltop=True, bottom=False, labelbottom=False, left=False, labelleft=False, labelsize='small', pad=0)
+ax3.text(0,1,'women',
+         color='white', horizontalalignment='left', verticalalignment='top',
+         transform=ax3.transAxes)
 
-pl.sca(ax6)
-c6,x,y,ch2 = ax6.hist2d(custhours, custdays, [range(0,25),range(1,33)])
-ax6.set_xlim(right=24)
-pl.ylabel('day of the month', labelpad=0.03)
-divider6 = make_axes_locatable(ax6)
-cax6=divider6.append_axes("top", size='5%', pad=0.03)
-cbar6=figh.colorbar(ch2, cax=cax6, orientation = 'horizontal')
-cbar6.ax.tick_params(labeltop='on', labelbottom='off', top='on', bottom='off')
-ax6.text(0,0.5,'customers', color='white', rotation='vertical', verticalalignment='bottom')
+#Customers:
+pl.sca(ax4)
+c,x,y,ch2 = ax4.hist2d(custhours, custdays, [range(0,25),range(1,33)])
+ax4.set_xlim(right=24)
+pl.xlabel('hour', labelpad=0.05)
+cbar4=addCBar(ch2,ax4)
+ax4.tick_params(labelsize='small', pad=0)
+ax4.text(0,1,'customers',
+         color='white', horizontalalignment='left', verticalalignment='top',
+         transform=ax4.transAxes)
 
-pl.sca(ax7)
-c,x,y,sh2 = ax7.hist2d(subschours, subscdays, [range(0,25),range(1,33)])
-pl.setp( ax7.get_xticklabels(), visible=False)
-divider7 = make_axes_locatable(ax7)
-cax7=divider7.append_axes("bottom", size='5%', pad=0.03)
-figh.colorbar(sh2, cax=cax7, orientation = 'horizontal')
-ax7.text(0,0.5,'subscribers', color='white', rotation='vertical', verticalalignment='bottom')
+#Subscribers:
+pl.sca(ax5)
+c,x,y,sh2 = ax5.hist2d(subschours, subscdays, [range(0,25),range(1,33)])
+cbar3=addCBar(sh2,ax5, side='bottom')
+ax5.tick_params(top=True, labeltop=True, bottom=False, labelbottom=False, labelsize='small', pad=0)
+ax5.text(0,1,'subscribers',
+         color='white', horizontalalignment='left', verticalalignment='top',
+         transform=ax5.transAxes)
 
-collist1 = ['b', 'r', 'g']
-lablist1 = ['Men', 'Women', 'Unknown']
-bounds1 = [0, totalMale, totalMale + totalFemale, numTotal]
-cb2 = myLabeledColorBar(ax4, bounds1, lablist1, collist1, orientation='vertical')
+#I dislike pie charts, so here is an alternative I constructed with color bars
+#See function myLabeledColorBar above.
+collist1 = ['tomato', 'deepskyblue', 'limegreen']
+lablist1 = ['Women', 'Men', 'Unknown']
+bounds1 = [0, totalFemale, totalMale + totalFemale, numTotal]
+cb2 = myLabeledColorBar(ax6, bounds1, lablist1, collist1, orientation='vertical')
 
-collist2 = ['yellow', 'pink']
-lablist2 = ['Customers', 'Subscribers']
-bounds2 = [0, totalCust, totalCust + totalSubsc]
-cb3 = myLabeledColorBar(ax5, bounds2, lablist2, collist2, orientation='vertical')
+collist2 = ['orange', 'pink']
+lablist2 = ['Subscribers','Customers']
+bounds2 = [0, totalSubsc, totalCust + totalSubsc]
+cb3 = myLabeledColorBar(ax7, bounds2, lablist2, collist2, orientation='vertical')
 
+#And finally render the whole plot
 pl.show()
-
-if __name__ == '__main__':
-    pass
